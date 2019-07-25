@@ -38,6 +38,8 @@ public class LODSettings
     public float distance;
     public int size;
     public GameObject mesh;
+
+    [HideInInspector]
     public int maxSize;
 }
 
