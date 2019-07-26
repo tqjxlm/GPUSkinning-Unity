@@ -61,14 +61,20 @@ public class AnimationBaker
         BakeAnimation(crowd, animator, go, allBones, false, "All");
 
         // Bake weapon bones
-        //GPUSkinning renderer = go.GetComponent<GPUSkinning>();
-        //Dictionary<string, int> weaponBones = renderer.GetWeaponBones();
-        //Transform weaponRoot = renderer.TopLevelWeaponBone;
-        //BakeAnimation(crowd, animator, go, weaponBones, true, "Weapon");
-        //BakeAnimation(crowd, animator, go, weaponBones, false, "Weapon");
+        GPUSkinning renderer = go.GetComponent<GPUSkinning>();
+        Dictionary<string, int> weaponBones = renderer.GetWeaponBones();
+        if (weaponBones != null)
+        {
+            BakeAnimation(crowd, animator, go, weaponBones, true, "Weapon");
+            BakeAnimation(crowd, animator, go, weaponBones, false, "Weapon");
+        }
+        else
+        {
+            Debug.Log("Weapon animations are not baked because TopLevelWeaponBone is not assigned");
+        }
     }
 
-    static void BakeAnimation(CrowdManager crowd, Animator animator, GameObject go, Dictionary<string, int> boneDict, bool morton, string textureTag)
+    static void BakeAnimation(CrowdManager crowd, Animator animator, GameObject go, Dictionary<string, int> usedBones, bool morton, string textureTag)
     {
         // Get bone and animator info
         List<AnimationResource> animations = crowd.Animations;
@@ -116,11 +122,12 @@ public class AnimationBaker
                 FetchBoneMatrices(rootBone, globalTransform);
 
                 // Store the bone animation to an array of textures
-                foreach(KeyValuePair<string, int> entry in allBones)
+                foreach(KeyValuePair<string, int> entry in usedBones)
                 {
                     uint bone = (uint)entry.Value;
-
-                    DualQuaternion dq = boneTransforms[bone];
+                    int boneID = allBones[entry.Key];
+                    
+                    DualQuaternion dq = boneTransforms[boneID];
                     if (dq == null)
                     {
                         continue;

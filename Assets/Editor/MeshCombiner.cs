@@ -16,7 +16,6 @@ public class MeshCombiner
         int numSubs = 0;
 
         Material originalMaterial = smRenderers[0].sharedMaterial;
-        string path = StoragePathUsing1stMeshAndSubPath(smRenderers[0].sharedMesh, "MergedMeshes");
 
         foreach (SkinnedMeshRenderer smr in smRenderers)
             numSubs += smr.sharedMesh.subMeshCount;
@@ -66,6 +65,7 @@ public class MeshCombiner
         r.sharedMesh.bindposes = bindposes.ToArray();
         r.sharedMesh.RecalculateBounds();
 
+        string path = GetStoragePath("MergedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + ".asset");
         AssetDatabase.CreateAsset(r.sharedMesh, meshPath);
         AssetDatabase.SaveAssets();
@@ -74,14 +74,13 @@ public class MeshCombiner
         Debug.Log("bone size: " + boneCollections[0].Count);
     }
 
-    static string StoragePathUsing1stMeshAndSubPath(Mesh mesh, string subPath)
+    static string GetStoragePath(string subPath)
     {
-        if (mesh != null)
+        string assetDir = "Assets/Meshes/";
+        if (!Directory.Exists(assetDir + subPath))
         {
-            string assetPath = AssetDatabase.GetAssetPath(mesh) + "/../";            
-            if (!Directory.Exists(assetPath + subPath)) AssetDatabase.CreateFolder(assetPath, subPath);
-            return assetPath + subPath;
+            AssetDatabase.CreateFolder(assetDir, subPath);
         }
-        return null;
+        return assetDir + subPath;
     }
 }

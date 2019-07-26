@@ -18,7 +18,7 @@ public class MeshSimplifier
         var destMesh = meshSimplifier.ToMesh();
         destMesh.bindposes = sourceMesh.bindposes;
 
-        string path = GetStoragePath(sourceMesh, "SimplifiedMeshes");
+        string path = GetStoragePath("SimplifiedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + "_LOD.asset");
         AssetDatabase.CreateAsset(destMesh, meshPath);
         AssetDatabase.SaveAssets();
@@ -26,15 +26,13 @@ public class MeshSimplifier
         Debug.Log("Simplified mesh saved to " + meshPath);
     }
 
-    static string GetStoragePath(Mesh mesh, string subPath)
+    static string GetStoragePath(string subPath)
     {
-        if (mesh != null)
+        string assetDir = "Assets/Meshes/";
+        if (!Directory.Exists(assetDir + subPath))
         {
-            string assetPath = AssetDatabase.GetAssetPath(mesh);
-            string assetDir = assetPath.Remove(assetPath.LastIndexOf('/')) + "/../";
-            if (!Directory.Exists(assetDir + subPath)) AssetDatabase.CreateFolder(assetDir, subPath);
-            return assetDir + subPath;
+            AssetDatabase.CreateFolder(assetDir, subPath);
         }
-        return null;
+        return assetDir + subPath;
     }
 }

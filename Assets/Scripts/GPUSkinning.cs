@@ -66,6 +66,7 @@ public class GPUSkinning : MonoBehaviour
     Material GPUSkinMaterial;
     Material GPUSkinMaterialSimple;
     Material GPUWeaponMaterial;
+    Material GPUWeaponMaterialSimple;
     MaterialPropertyBlock instanceProperties;
     Vector2 textureSize;
     bool mortonSort = true;
@@ -156,8 +157,6 @@ public class GPUSkinning : MonoBehaviour
         instanceProperties = new MaterialPropertyBlock();
         GPUSkinMaterial.CopyPropertiesFromMaterial(firstLODRenderer.sharedMaterial);
         ToggleKeyword(GPUSkinMaterial, mortonSort, "MORTON_CODE", "XY_INDEXING");
-
-        // Load baked animations and discard the built-in animator
         LoadBakedAnimations(ref GPUSkinMaterial, "All");
 
         if (!HardwareAdapter.MortonSortEnabled)
@@ -171,7 +170,12 @@ public class GPUSkinning : MonoBehaviour
         {
             GPUWeaponMaterial = new Material(GPUSkinShader) { enableInstancing = true };
             GPUWeaponMaterial.CopyPropertiesFromMaterial(WeaponMaterial);
+            GPUWeaponMaterial.CopyPropertiesFromMaterial(GPUSkinMaterial);
             LoadBakedAnimations(ref GPUWeaponMaterial, "Weapon");
+
+            GPUWeaponMaterialSimple = new Material(GPUSkinShaderSimple) { enableInstancing = true };
+            GPUWeaponMaterialSimple.CopyPropertiesFromMaterial(lodSettings[2].mesh.GetComponent<SkinnedMeshRenderer>().sharedMaterial);
+            GPUWeaponMaterialSimple.CopyPropertiesFromMaterial(GPUWeaponMaterial);
         }
 
         // Process character meshes
@@ -191,6 +195,10 @@ public class GPUSkinning : MonoBehaviour
 
     public Dictionary<string, int> GetWeaponBones()
     {
+        if (TopLevelWeaponBone == null)
+        {
+            return null;
+        }
         Dictionary<string, int> weaponBoneDict = new Dictionary<string, int>();
         SkinnedMeshRenderer firstLODRenderer = lodSettings[0].mesh.GetComponent<SkinnedMeshRenderer>();
         allBones = firstLODRenderer.bones;
@@ -265,10 +273,10 @@ public class GPUSkinning : MonoBehaviour
     }
 
     // Fetch information from skinned mesh renderer
-    void RegisterLOD(GameObject child)
+    void RegisterLOD(GameObject lod)
     {
         // Copy the shared mesh to modify it
-        SkinnedMeshRenderer oldSkinnedRenderer = child.GetComponent<SkinnedMeshRenderer>();
+        SkinnedMeshRenderer oldSkinnedRenderer = lod.GetComponent<SkinnedMeshRenderer>();
         Mesh mesh = Instantiate(oldSkinnedRenderer.sharedMesh);
 
         BoneWeight[] w = mesh.boneWeights;
@@ -311,9 +319,8 @@ public class GPUSkinning : MonoBehaviour
         // Register LODs
         meshLODs.Add(mesh);
 
-        // Deactive the child to prevent the default mesh renderer
-        //child.SetActive(false);
-        Destroy(child);
+        // Destroy the child to prevent the default mesh renderer
+        Destroy(lod);
     }
 
     void RegisterWeapon(Mesh weapon, Dictionary<string, int> weaponBoneDict)
@@ -329,22 +336,25 @@ public class GPUSkinning : MonoBehaviour
         {
             // Convert integer index to normalized index
             float weight = w[i].weight0 / (w[i].weight0 + w[i].weight1);
-            //weaponBoneDict.TryGetValue(allBones[w[i].boneIndex0].name, out int bone0);
-            //weaponBoneDict.TryGetValue(allBones[w[i].boneIndex1].name, out int bone1);
+            if (!weaponBoneDict.TryGetValue(allBones[w[i].boneIndex0].name, out int bone0))
+            {
+                Debug.LogError("Weapon not rigged");
+            }
+            weaponBoneDict.TryGetValue(allBones[w[i].boneIndex1].name, out int bone1);
 
             if (mortonSort)
             {
                 boneInfo[i] = new Vector4(
-                    MathHelper.EncodeMorton((uint)w[i].boneIndex0),
-                    MathHelper.EncodeMorton((uint)w[i].boneIndex1),
+                    MathHelper.EncodeMorton((uint)bone0),
+                    MathHelper.EncodeMorton((uint)bone1),
                     weight
                     );
             }
             else
             {
                 boneInfo[i] = new Vector4(
-                    (0.5f + w[i].boneIndex0) / textureSize.x,
-                    (0.5f + w[i].boneIndex1) / textureSize.x,
+                    (0.5f + bone0) / textureSize.x,
+                    (0.5f + bone1) / textureSize.x,
                     weight
                     );
             }
@@ -475,19 +485,25 @@ public class GPUSkinning : MonoBehaviour
             }
 
             // Weapons
-            if (i < 2)
+            if (weaponMeshes.Count > 0)
             {
-                Graphics.DrawMeshInstanced(
-                    weaponMeshes[0], 0, GPUSkinMaterial,
-                    instanceLODs[i].Transforms, instanceLODs[i].Count, instanceProperties,
-                    shadowCastingMode, shadowReceivingMode);
-            }
-            else
-            {
-                Graphics.DrawMeshInstanced(
-                    weaponMeshes[0], 0, HardwareAdapter.MortonSortEnabled ? GPUSkinMaterial : GPUSkinMaterialSimple,
-                    instanceLODs[i].Transforms, instanceLODs[i].Count, instanceProperties,
-                    UnityEngine.Rendering.ShadowCastingMode.Off, false);
+                for (int weapon = 0; weapon < weaponMeshes.Count; weapon++)
+                {
+                    if (i < 2)
+                    {
+                        Graphics.DrawMeshInstanced(
+                            weaponMeshes[weapon], 0, GPUWeaponMaterial,
+                            instanceLODs[i].Transforms, instanceLODs[i].Count, instanceProperties,
+                            shadowCastingMode, shadowReceivingMode);
+                    }
+                    else
+                    {
+                        Graphics.DrawMeshInstanced(
+                            weaponMeshes[weapon], 0, HardwareAdapter.MortonSortEnabled ? GPUWeaponMaterial : GPUWeaponMaterialSimple,
+                            instanceLODs[i].Transforms, instanceLODs[i].Count, instanceProperties,
+                            UnityEngine.Rendering.ShadowCastingMode.Off, false);
+                    }
+                }
             }
         }
     }
