@@ -5,30 +5,29 @@ using UnityEditor;
 public class AnimationBaker
 {
     const uint NUM_TEXTURE = GPUSkinning.NUM_TEXTURE;
-    const uint MAXIMUM_BONE = GPUSkinning.MAXIMUM_BONE;
     const uint ATLAS_PADDING = GPUSkinning.ATLAS_PADDING;
 
-    // Bone info, all with size MAXIMUM_BONE
-    static DualQuaternion[] boneTransforms = new DualQuaternion[MAXIMUM_BONE];
-    static Matrix4x4[] bindPoses;
-    static Dictionary<string, int> boneDict = new Dictionary<string, int>();
+    static DualQuaternion[] boneTransforms;
+    static Dictionary<string, int> allBones;
 
     // Retrieve bone mapping, bind poses and material properties
-    static void RetrieveBoneInfo(SkinnedMeshRenderer renderer)
+    static Dictionary<string, int> RetrieveBoneDictionary(SkinnedMeshRenderer renderer)
     {
-        bindPoses = renderer.sharedMesh.bindposes;
+        Dictionary<string, int> boneDict = new Dictionary<string, int>();
 
         Transform[] bones = renderer.bones;
         for (int i = 0; i < bones.Length; i++)
         {
             boneDict[bones[i].name] = i;
         }
+
+        return boneDict;
     }
 
     // Recursively update all bone transforms
     static void FetchBoneMatrices(Transform bone, DualQuaternion parentTransform)
     {
-        if (boneDict.TryGetValue(bone.name, out int idx))
+        if (allBones.TryGetValue(bone.name, out int idx))
         {
             boneTransforms[idx] = parentTransform * (new DualQuaternion(bone));
 
@@ -46,27 +45,36 @@ public class AnimationBaker
         GameObject go = Selection.activeGameObject;
         Animator animator = go.GetComponent<Animator>();
         CrowdManager crowd = go.GetComponent<CrowdManager>();
+
         if (animator == null || crowd == null)
         {
             Debug.LogError("Invalid object. Please assign an animator and a virtual crowd to the game object");
             return;
         }
 
-        BakeAnimation(crowd, animator, go, true);
-        BakeAnimation(crowd, animator, go, false);
+        animator.speed = 0;
+        allBones = RetrieveBoneDictionary(go.GetComponentInChildren<SkinnedMeshRenderer>());
+        boneTransforms = new DualQuaternion[allBones.Count];
+
+        // Bake character bones
+        BakeAnimation(crowd, animator, go, allBones, true, "All");
+        BakeAnimation(crowd, animator, go, allBones, false, "All");
+
+        // Bake weapon bones
+        //GPUSkinning renderer = go.GetComponent<GPUSkinning>();
+        //Dictionary<string, int> weaponBones = renderer.GetWeaponBones();
+        //Transform weaponRoot = renderer.TopLevelWeaponBone;
+        //BakeAnimation(crowd, animator, go, weaponBones, true, "Weapon");
+        //BakeAnimation(crowd, animator, go, weaponBones, false, "Weapon");
     }
 
-    static void BakeAnimation(CrowdManager crowd, Animator animator, GameObject go, bool morton)
+    static void BakeAnimation(CrowdManager crowd, Animator animator, GameObject go, Dictionary<string, int> boneDict, bool morton, string textureTag)
     {
         // Get bone and animator info
         List<AnimationResource> animations = crowd.Animations;
-        animator.speed = 0;
         Transform rootBone = animator.GetBoneTransform(HumanBodyBones.Hips);
         Transform globalRoot = rootBone.parent.transform;
         DualQuaternion globalTransform = new DualQuaternion(globalRoot.rotation, globalRoot.position);
-
-        SkinnedMeshRenderer renderer = go.GetComponentInChildren<SkinnedMeshRenderer>();
-        RetrieveBoneInfo(renderer);
 
         // Decide texture size
         uint totalFrame = 0;
@@ -108,8 +116,10 @@ public class AnimationBaker
                 FetchBoneMatrices(rootBone, globalTransform);
 
                 // Store the bone animation to an array of textures
-                for (uint bone = 0; bone < MAXIMUM_BONE; bone++)
+                foreach(KeyValuePair<string, int> entry in allBones)
                 {
+                    uint bone = (uint)entry.Value;
+
                     DualQuaternion dq = boneTransforms[bone];
                     if (dq == null)
                     {
@@ -155,13 +165,13 @@ public class AnimationBaker
         {
             if (morton)
             {
-                string assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_Morton{1}.asset", go.name, i);
+                string assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_{1}_Morton{2}.asset", go.name, textureTag, i);
                 AssetDatabase.DeleteAsset(assetPath);
                 AssetDatabase.CreateAsset(animTexture[i], assetPath);
             }
             else
             {
-                string assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation{1}.asset", go.name, i);
+                string assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_{1}_XY{2}.asset", go.name, textureTag, i);
                 AssetDatabase.DeleteAsset(assetPath);
                 AssetDatabase.CreateAsset(animTexture[i], assetPath);
             }

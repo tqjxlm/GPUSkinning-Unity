@@ -16,6 +16,7 @@ public class MeshCombiner
         int numSubs = 0;
 
         Material originalMaterial = smRenderers[0].sharedMaterial;
+        string path = StoragePathUsing1stMeshAndSubPath(smRenderers[0].sharedMesh, "MergedMeshes");
 
         foreach (SkinnedMeshRenderer smr in smRenderers)
             numSubs += smr.sharedMesh.subMeshCount;
@@ -44,7 +45,7 @@ public class MeshCombiner
             ci.transform = smr.transform.localToWorldMatrix;
             combineInstances.Add(ci);
 
-            UnityEngine.Object.Destroy(smr.gameObject);
+            Object.DestroyImmediate(smr.gameObject);
         }
 
         List<Matrix4x4> bindposes = new List<Matrix4x4>();
@@ -65,7 +66,6 @@ public class MeshCombiner
         r.sharedMesh.bindposes = bindposes.ToArray();
         r.sharedMesh.RecalculateBounds();
 
-		string path = StoragePathUsing1stMeshAndSubPath(Get1stSharedMesh(go), "MergedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + ".asset");
         AssetDatabase.CreateAsset(r.sharedMesh, meshPath);
         AssetDatabase.SaveAssets();
@@ -74,28 +74,13 @@ public class MeshCombiner
         Debug.Log("bone size: " + boneCollections[0].Count);
     }
 
-    static Mesh Get1stSharedMesh(GameObject go)
-    {
-        MeshFilter[] mfs = go.GetComponentsInChildren<MeshFilter>(false);
-        for (int i = 0; mfs != null && i < mfs.Length; i++)
-        {
-            if (mfs[i].sharedMesh != null) return mfs[i].sharedMesh;
-        }
-        SkinnedMeshRenderer[] smrs = go.GetComponentsInChildren<SkinnedMeshRenderer>(false);
-        for (int i = 0; smrs != null && i < smrs.Length; i++)
-        {
-            if (smrs[i].sharedMesh != null) return smrs[i].sharedMesh;
-        }
-        return null;
-    }
-
     static string StoragePathUsing1stMeshAndSubPath(Mesh mesh, string subPath)
     {
         if (mesh != null)
         {
-            string assetPath = AssetDatabase.GetAssetPath(mesh);            
-            if (!Directory.Exists(assetPath + "/" + subPath)) AssetDatabase.CreateFolder(assetPath, subPath);
-            return assetPath + "/" + subPath;
+            string assetPath = AssetDatabase.GetAssetPath(mesh) + "/../";            
+            if (!Directory.Exists(assetPath + subPath)) AssetDatabase.CreateFolder(assetPath, subPath);
+            return assetPath + subPath;
         }
         return null;
     }
