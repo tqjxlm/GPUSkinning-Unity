@@ -498,10 +498,10 @@ public class GPUSkinning : MonoBehaviour
                     }
                     else
                     {
-                        Graphics.DrawMeshInstanced(
-                            weaponMeshes[weapon], 0, HardwareAdapter.MortonSortEnabled ? GPUWeaponMaterial : GPUWeaponMaterialSimple,
-                            instanceLODs[i].Transforms, instanceLODs[i].Count, instanceProperties,
-                            UnityEngine.Rendering.ShadowCastingMode.Off, false);
+                        //Graphics.DrawMeshInstanced(
+                        //    weaponMeshes[weapon], 0, HardwareAdapter.MortonSortEnabled ? GPUWeaponMaterial : GPUWeaponMaterialSimple,
+                        //    instanceLODs[i].Transforms, instanceLODs[i].Count, instanceProperties,
+                        //    UnityEngine.Rendering.ShadowCastingMode.Off, false);
                     }
                 }
             }

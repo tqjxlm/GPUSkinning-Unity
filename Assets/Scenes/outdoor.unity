@@ -3717,7 +3717,7 @@ MonoBehaviour:
     maxSize: 0
   TopLevelWeaponBone: {fileID: 1032165185403764029}
   AvailableWeapons:
-  - {fileID: 4300010, guid: 4d1a7012e497b5645b59962f4f76af8f, type: 3}
+  - {fileID: 4300000, guid: 8ced7dd43db283b4a929c833d5973cfd, type: 2}
   WeaponMaterial: {fileID: 2100000, guid: 1666fb81395f51e4293b01cca8f58481, type: 2}
 --- !u!136 &1032165184600211202
 CapsuleCollider:
@@ -4900,7 +4900,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 600, y: 450}
+  m_SizeDelta: {x: 800, y: 450}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &2929252285130641360
 MonoBehaviour:
