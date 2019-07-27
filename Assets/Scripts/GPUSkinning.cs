@@ -6,7 +6,7 @@ using System;
 using System.Linq;
 
 // Level of details of a set of instances
-class InstanceLOD
+class IntanceBatch
 {
     public Matrix4x4[] Transforms { get; private set; }
 
@@ -16,7 +16,7 @@ class InstanceLOD
 
     public Mesh Mesh { get; private set; }
 
-    public InstanceLOD(int crowdCount, Mesh mesh)
+    public IntanceBatch(int crowdCount, Mesh mesh)
     {
         Transforms = new Matrix4x4[crowdCount];
         AnimStates = new Vector4[crowdCount];
@@ -76,8 +76,8 @@ public class GPUSkinning : MonoBehaviour
     Texture2D[] bakedAnimation;
     bool mortonSort = true;
     float meshRadius;
-    List<InstanceLOD> instanceLODs = new List<InstanceLOD>();
-    List<InstanceLOD> weaponBatch = new List<InstanceLOD>();
+    List<IntanceBatch> instanceLODs = new List<IntanceBatch>();
+    List<IntanceBatch> weaponBatch = new List<IntanceBatch>();
     int[] elementID;
     float[] elementDistance;
 
@@ -139,7 +139,7 @@ public class GPUSkinning : MonoBehaviour
 
             lodSettings.Add(lod);
 
-            instanceLODs.Add(new InstanceLOD(lod.maxSize, instanceLODs.Last().Mesh));
+            instanceLODs.Add(new IntanceBatch(lod.maxSize, instanceLODs.Last().Mesh));
 
             lodCapacity += lod.size;
         }
@@ -180,12 +180,7 @@ public class GPUSkinning : MonoBehaviour
         // Init materials for rendering
         SkinnedMeshRenderer firstLODRenderer = lodSettings[0].lodPrefab.GetComponent<SkinnedMeshRenderer>();
         GPUSkinMaterial = ApplyMaterialWithGPUSkinning(GPUSkinShader, firstLODRenderer.sharedMaterial);
-
-        if (!HardwareAdapter.MortonSortEnabled)
-        {
-            SkinnedMeshRenderer lastLODRenderer = lodSettings[2].lodPrefab.GetComponent<SkinnedMeshRenderer>();
-            GPUSkinMaterialSimple = ApplyMaterialWithGPUSkinning(GPUSkinShaderSimple, lastLODRenderer.sharedMaterial);
-        }
+        GPUSkinMaterialSimple = ApplyMaterialWithGPUSkinning(GPUSkinShaderSimple, firstLODRenderer.sharedMaterial);
 
         // Process weapons
         if (AvailableWeapons.Count > 0)
@@ -195,7 +190,7 @@ public class GPUSkinning : MonoBehaviour
             int maxDrawnWeapon = lodSettings[0].size + lodSettings[1].size;
             foreach (Mesh mesh in AvailableWeapons)
             {
-                weaponBatch.Add(new InstanceLOD(maxDrawnWeapon, ProcessMesh(mesh)));
+                weaponBatch.Add(new IntanceBatch(maxDrawnWeapon, ProcessMesh(mesh)));
             }
         }
 
@@ -205,7 +200,7 @@ public class GPUSkinning : MonoBehaviour
             LODSettings lod = lodSettings[i];
             Mesh meshNoWeapon = ProcessMesh(lod.lodPrefab.GetComponent<SkinnedMeshRenderer>().sharedMesh);
 
-            instanceLODs.Add(new InstanceLOD(lod.size, meshNoWeapon));
+            instanceLODs.Add(new IntanceBatch(lod.size, meshNoWeapon));
 
             Destroy(lod.lodPrefab);
         }
@@ -392,15 +387,25 @@ public class GPUSkinning : MonoBehaviour
     {
         profiler.Log("Instance count: " + instanceLODs.Sum(item => item.Count));
 
+        // Draw weapons
+        for (int i = 0; i < weaponBatch.Count; i++)
+        {
+            IntanceBatch batch = weaponBatch[i];
+            instanceProperties.SetVectorArray("_AnimState", batch.AnimStates);
+
+            Graphics.DrawMeshInstanced(
+                batch.Mesh, 0, GPUWeaponMaterial,
+                batch.Transforms, batch.Count, instanceProperties,
+                shadowCastingMode, shadowReceivingMode);
+        }
+
         for (int i = 0; i < instanceLODs.Count; i++)
         {
-            InstanceLOD lod = instanceLODs[i];
+            IntanceBatch lod = instanceLODs[i];
+            instanceProperties.SetVectorArray("_AnimState", lod.AnimStates);
 
             profiler.Log(string.Format("LOD_{0}: {1}", i, lod.Count));
 
-            instanceProperties.SetVectorArray("_AnimState", lod.AnimStates);
-
-            // We assume single mesh here (no sub meshes)
             if (i < 2)
             {
                 Graphics.DrawMeshInstanced(
@@ -411,22 +416,10 @@ public class GPUSkinning : MonoBehaviour
             else
             {
                 Graphics.DrawMeshInstanced(
-                    lod.Mesh, 0, HardwareAdapter.MortonSortEnabled ? GPUSkinMaterial : GPUSkinMaterialSimple,
+                    lod.Mesh, 0, GPUSkinMaterialSimple,
                     lod.Transforms, lod.Count, instanceProperties,
                     UnityEngine.Rendering.ShadowCastingMode.Off, false);
             }
-        }
-
-        // Draw weapons
-        for (int i = 0; i < weaponBatch.Count; i++)
-        {
-            InstanceLOD batch = weaponBatch[i];
-            instanceProperties.SetVectorArray("_AnimState", batch.AnimStates);
-
-            Graphics.DrawMeshInstanced(
-                batch.Mesh, 0, GPUWeaponMaterial,
-                batch.Transforms, batch.Count, instanceProperties,
-                shadowCastingMode, shadowReceivingMode);
         }
     }
 

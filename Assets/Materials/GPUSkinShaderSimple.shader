@@ -14,7 +14,7 @@
 		LOD 200
 
 		CGPROGRAM
-		#pragma surface surf BlinnPhong vertex:vert addshadow halfasview noforwardadd exclude_path:deferred exclude_path:prepass
+		#pragma surface surf SimpleLambert vertex:vert addshadow halfasview noforwardadd exclude_path:deferred exclude_path:prepass
 		#pragma multi_compile MORTON_CODE XY_INDEXING
 		#pragma target 3.5
 
@@ -30,9 +30,17 @@
 		};
 
 		void surf(Input IN, inout SurfaceOutput o) {
-			fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * 0.7;
+			fixed4 c = tex2D(_MainTex, IN.uv_MainTex);
 			o.Albedo = c.rgb;
 		}
+
+		half4 LightingSimpleLambert (SurfaceOutput s, half3 lightDir, half atten) {
+            half NdotL = dot(s.Normal, lightDir);
+            half4 c;
+            c.rgb = s.Albedo * _LightColor0.rgb * NdotL * NdotL;
+            c.a = s.Alpha;
+            return c;
+          }
 		ENDCG
 	}
 
