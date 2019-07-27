@@ -3715,10 +3715,9 @@ MonoBehaviour:
     size: 1000
     mesh: {fileID: 1032165184611084582}
     maxSize: 0
-  TopLevelWeaponBone: {fileID: 1032165185403764029}
   AvailableWeapons:
   - {fileID: 4300000, guid: 8ced7dd43db283b4a929c833d5973cfd, type: 2}
-  WeaponMaterial: {fileID: 2100000, guid: 1666fb81395f51e4293b01cca8f58481, type: 2}
+  - {fileID: 4300000, guid: 3b0ae74fa69b26b419047a0d4f0e4557, type: 2}
 --- !u!136 &1032165184600211202
 CapsuleCollider:
   m_ObjectHideFlags: 0

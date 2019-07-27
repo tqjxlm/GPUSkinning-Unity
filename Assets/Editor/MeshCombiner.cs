@@ -74,13 +74,32 @@ public class MeshCombiner
         Debug.Log("bone size: " + boneCollections[0].Count);
     }
 
+    [MenuItem("GameObject/Deform Mesh", false, 0)]
+    public static void DeformMesh()
+    {
+        GameObject go = Selection.activeGameObject;
+        MeshFilter meshFilter = go.GetComponent<MeshFilter>();
+        Mesh newMesh = Object.Instantiate(meshFilter.mesh);
+        Vector3[] vertices = newMesh.vertices;
+        for (int i = 0; i < newMesh.vertexCount; i++)
+        {
+            vertices[i].y *= 1.5f;
+        }
+        newMesh.vertices = vertices;
+
+        string path = GetStoragePath("DeformedMeshes");
+        string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + "_Deformed.asset");
+        AssetDatabase.CreateAsset(newMesh, meshPath);
+        AssetDatabase.SaveAssets();
+    }
+
     static string GetStoragePath(string subPath)
     {
-        string assetDir = "Assets/Meshes/";
-        if (!Directory.Exists(assetDir + subPath))
+        string assetDir = "Assets/Meshes";
+        if (!Directory.Exists(assetDir + '/' + subPath))
         {
             AssetDatabase.CreateFolder(assetDir, subPath);
         }
-        return assetDir + subPath;
+        return assetDir + '/' + subPath;
     }
 }

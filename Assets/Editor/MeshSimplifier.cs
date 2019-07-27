@@ -28,11 +28,11 @@ public class MeshSimplifier
 
     static string GetStoragePath(string subPath)
     {
-        string assetDir = "Assets/Meshes/";
-        if (!Directory.Exists(assetDir + subPath))
+        string assetDir = "Assets/Meshes";
+        if (!Directory.Exists(assetDir + '/' + subPath))
         {
             AssetDatabase.CreateFolder(assetDir, subPath);
         }
-        return assetDir + subPath;
+        return assetDir + '/' + subPath;
     }
 }

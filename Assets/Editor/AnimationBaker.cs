@@ -57,24 +57,11 @@ public class AnimationBaker
         boneTransforms = new DualQuaternion[allBones.Count];
 
         // Bake character bones
-        BakeAnimation(crowd, animator, go, allBones, true, "All");
-        BakeAnimation(crowd, animator, go, allBones, false, "All");
-
-        // Bake weapon bones
-        GPUSkinning renderer = go.GetComponent<GPUSkinning>();
-        Dictionary<string, int> weaponBones = renderer.GetWeaponBones();
-        if (weaponBones != null)
-        {
-            BakeAnimation(crowd, animator, go, weaponBones, true, "Weapon");
-            BakeAnimation(crowd, animator, go, weaponBones, false, "Weapon");
-        }
-        else
-        {
-            Debug.Log("Weapon animations are not baked because TopLevelWeaponBone is not assigned");
-        }
+        BakeAnimation(crowd, animator, go, true);
+        BakeAnimation(crowd, animator, go, false);
     }
 
-    static void BakeAnimation(CrowdManager crowd, Animator animator, GameObject go, Dictionary<string, int> usedBones, bool morton, string textureTag)
+    static void BakeAnimation(CrowdManager crowd, Animator animator, GameObject go, bool morton)
     {
         // Get bone and animator info
         List<AnimationResource> animations = crowd.Animations;
@@ -122,12 +109,9 @@ public class AnimationBaker
                 FetchBoneMatrices(rootBone, globalTransform);
 
                 // Store the bone animation to an array of textures
-                foreach(KeyValuePair<string, int> entry in usedBones)
-                {
-                    uint bone = (uint)entry.Value;
-                    int boneID = allBones[entry.Key];
-                    
-                    DualQuaternion dq = boneTransforms[boneID];
+                for (uint bone = 0; bone < allBones.Count; bone++)
+                {                   
+                    DualQuaternion dq = boneTransforms[bone];
                     if (dq == null)
                     {
                         continue;
@@ -172,13 +156,13 @@ public class AnimationBaker
         {
             if (morton)
             {
-                string assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_{1}_Morton{2}.asset", go.name, textureTag, i);
+                string assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_Morton{1}.asset", go.name, i);
                 AssetDatabase.DeleteAsset(assetPath);
                 AssetDatabase.CreateAsset(animTexture[i], assetPath);
             }
             else
             {
-                string assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_{1}_XY{2}.asset", go.name, textureTag, i);
+                string assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_XY{1}.asset", go.name, i);
                 AssetDatabase.DeleteAsset(assetPath);
                 AssetDatabase.CreateAsset(animTexture[i], assetPath);
             }
