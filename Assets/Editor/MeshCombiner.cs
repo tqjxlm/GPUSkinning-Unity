@@ -65,6 +65,8 @@ public class MeshCombiner
         r.sharedMesh.bindposes = bindposes.ToArray();
         r.sharedMesh.RecalculateBounds();
 
+        r.sharedMesh.Optimize();
+
         string path = GetStoragePath("MergedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + ".asset");
         AssetDatabase.CreateAsset(r.sharedMesh, meshPath);

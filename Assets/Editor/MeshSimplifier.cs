@@ -18,6 +18,8 @@ public class MeshSimplifier
         var destMesh = meshSimplifier.ToMesh();
         destMesh.bindposes = sourceMesh.bindposes;
 
+        destMesh.Optimize();
+
         string path = GetStoragePath("SimplifiedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + "_LOD.asset");
         AssetDatabase.CreateAsset(destMesh, meshPath);
