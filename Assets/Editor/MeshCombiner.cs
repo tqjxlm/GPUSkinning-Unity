@@ -44,7 +44,7 @@ public class MeshCombiner
             ci.transform = smr.transform.localToWorldMatrix;
             combineInstances.Add(ci);
 
-            UnityEngine.Object.Destroy(smr.gameObject);
+            Object.DestroyImmediate(smr.gameObject);
         }
 
         List<Matrix4x4> bindposes = new List<Matrix4x4>();
@@ -65,7 +65,7 @@ public class MeshCombiner
         r.sharedMesh.bindposes = bindposes.ToArray();
         r.sharedMesh.RecalculateBounds();
 
-		string path = StoragePathUsing1stMeshAndSubPath(Get1stSharedMesh(go), "MergedMeshes");
+        string path = GetStoragePath("MergedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + ".asset");
         AssetDatabase.CreateAsset(r.sharedMesh, meshPath);
         AssetDatabase.SaveAssets();
@@ -74,29 +74,32 @@ public class MeshCombiner
         Debug.Log("bone size: " + boneCollections[0].Count);
     }
 
-    static Mesh Get1stSharedMesh(GameObject go)
+    [MenuItem("GameObject/Deform Mesh", false, 0)]
+    public static void DeformMesh()
     {
-        MeshFilter[] mfs = go.GetComponentsInChildren<MeshFilter>(false);
-        for (int i = 0; mfs != null && i < mfs.Length; i++)
+        GameObject go = Selection.activeGameObject;
+        MeshFilter meshFilter = go.GetComponent<MeshFilter>();
+        Mesh newMesh = Object.Instantiate(meshFilter.mesh);
+        Vector3[] vertices = newMesh.vertices;
+        for (int i = 0; i < newMesh.vertexCount; i++)
         {
-            if (mfs[i].sharedMesh != null) return mfs[i].sharedMesh;
+            vertices[i].y *= 1.5f;
         }
-        SkinnedMeshRenderer[] smrs = go.GetComponentsInChildren<SkinnedMeshRenderer>(false);
-        for (int i = 0; smrs != null && i < smrs.Length; i++)
-        {
-            if (smrs[i].sharedMesh != null) return smrs[i].sharedMesh;
-        }
-        return null;
+        newMesh.vertices = vertices;
+
+        string path = GetStoragePath("DeformedMeshes");
+        string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + "_Deformed.asset");
+        AssetDatabase.CreateAsset(newMesh, meshPath);
+        AssetDatabase.SaveAssets();
     }
 
-    static string StoragePathUsing1stMeshAndSubPath(Mesh mesh, string subPath)
+    static string GetStoragePath(string subPath)
     {
-        if (mesh != null)
+        string assetDir = "Assets/Meshes";
+        if (!Directory.Exists(assetDir + '/' + subPath))
         {
-            string assetPath = AssetDatabase.GetAssetPath(mesh);            
-            if (!Directory.Exists(assetPath + "/" + subPath)) AssetDatabase.CreateFolder(assetPath, subPath);
-            return assetPath + "/" + subPath;
+            AssetDatabase.CreateFolder(assetDir, subPath);
         }
-        return null;
+        return assetDir + '/' + subPath;
     }
 }

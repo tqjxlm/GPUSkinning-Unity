@@ -97,11 +97,14 @@ public class CrowdManager : MonoBehaviour
     // World transform of all instances
     public Matrix4x4[] Transforms { get; private set; }
 
-    // World position of all characters
+    // World position of all instances
     public Vector3[] Positions2D { get; private set; }
 
     // Animation status transfered to GPU: [frame_dst, weight_dst, frame_src, weight_src]
     public Vector4[] AnimationStatusGPU { get; private set; }
+
+    // Weapons of all instances
+    public int[] Weapons { get; private set; }
 
     // Animation transitions maintained in CPU
     PlayStatus[] AnimationStatusCPU;
@@ -130,6 +133,7 @@ public class CrowdManager : MonoBehaviour
         AnimationStatusCPU = new PlayStatus[crowdCount];
         Rotations = new Quaternion[crowdCount];
         GridID = new int[crowdCount];
+        Weapons = new int[crowdCount];
 
         stateDefinition = new AnimationState[Animations.Count];
         stateDefinition[0] = new AnimationState(spd => spd < 0.1 ? 0 : 1);
@@ -152,7 +156,7 @@ public class CrowdManager : MonoBehaviour
     }
 
     // Spawn a crowd
-    public void Spawn()
+    public void Spawn(int weaponCnt)
     {
         CapsuleCollider collider = GetComponent<CapsuleCollider>();
         MeshRadius = Math.Max(collider.radius, collider.height / 2);
@@ -173,6 +177,7 @@ public class CrowdManager : MonoBehaviour
             Rotations[i] = rot;
             Transforms[i] = Matrix4x4.TRS(pos, rot, Vector3.one);
             GridID[i] = -1;
+            Weapons[i] = UnityEngine.Random.Range(0, weaponCnt);
         }
     }
 

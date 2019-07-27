@@ -11,29 +11,30 @@ public class MeshSimplifier
         SkinnedMeshRenderer smRenderer = go.GetComponentInChildren<SkinnedMeshRenderer>();
         Mesh sourceMesh = smRenderer.sharedMesh;
 
-        float quality = 0.5f;
+        float quality = 0.7f;
         var meshSimplifier = new UnityMeshSimplifier.MeshSimplifier();
         meshSimplifier.Initialize(sourceMesh);
         meshSimplifier.SimplifyMesh(quality);
         var destMesh = meshSimplifier.ToMesh();
         destMesh.bindposes = sourceMesh.bindposes;
 
-        string path = GetStoragePath(destMesh, "SimplifiedMeshes");
+        string path = GetStoragePath("SimplifiedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + "_LOD.asset");
         AssetDatabase.CreateAsset(destMesh, meshPath);
         AssetDatabase.SaveAssets();
 
+        smRenderer.sharedMesh = destMesh;
+
         Debug.Log("Simplified mesh saved to " + meshPath);
     }
 
-    static string GetStoragePath(Mesh mesh, string subPath)
+    static string GetStoragePath(string subPath)
     {
-        if (mesh != null)
+        string assetDir = "Assets/Meshes";
+        if (!Directory.Exists(assetDir + '/' + subPath))
         {
-            string assetPath = AssetDatabase.GetAssetPath(mesh);
-            if (!Directory.Exists(assetPath + "/" + subPath)) AssetDatabase.CreateFolder(assetPath, subPath);
-            return assetPath + "/" + subPath;
+            AssetDatabase.CreateFolder(assetDir, subPath);
         }
-        return null;
+        return assetDir + '/' + subPath;
     }
 }

@@ -9,14 +9,19 @@ using System.Linq;
 class InstanceLOD
 {
     public Matrix4x4[] Transforms { get; private set; }
+
     public Vector4[] AnimStates { get; private set; }
+
     public int Count { get; private set; }
 
-    public InstanceLOD(int crowdCount)
+    public Mesh Mesh { get; private set; }
+
+    public InstanceLOD(int crowdCount, Mesh mesh)
     {
         Transforms = new Matrix4x4[crowdCount];
         AnimStates = new Vector4[crowdCount];
         Count = 0;
+        Mesh = mesh;
     }
 
     public void Reset()
@@ -37,7 +42,7 @@ public class LODSettings
 {
     public float distance;
     public int size;
-    public GameObject mesh;
+    public GameObject lodPrefab;
 
     [HideInInspector]
     public int maxSize;
@@ -54,6 +59,7 @@ public class GPUSkinning : MonoBehaviour
     public Shader GPUSkinShader;
     public Shader GPUSkinShaderSimple;
     public List<LODSettings> lodSettings = new List<LODSettings>(3);
+    public List<Mesh> AvailableWeapons;
 
     CrowdManager crowd;
     Camera mainCamera;
@@ -67,8 +73,8 @@ public class GPUSkinning : MonoBehaviour
     MaterialPropertyBlock instanceProperties;
     bool mortonSort = true;
     float meshRadius;
-    List<Mesh> meshLODs = new List<Mesh>();
     List<InstanceLOD> instanceLODs = new List<InstanceLOD>();
+    List<InstanceLOD> weaponBatch = new List<InstanceLOD>();
     int[] elementID;
     float[] elementDistance;
 
@@ -88,6 +94,23 @@ public class GPUSkinning : MonoBehaviour
         elementID = new int[crowd.crowdCount];
         elementDistance = new float[crowd.crowdCount];
 
+        ProcessRenderData();
+
+        InitLODs();
+
+        // Controls
+        InitControls();
+
+        // Spawn crowd
+        crowd.Spawn(AvailableWeapons.Count);
+        meshRadius = crowd.MeshRadius * 2;
+
+        StartCoroutine("ReOrder");
+        //StartCoroutine("AdaptPerformance");
+    }
+
+    void InitLODs()
+    {
         int lodCapacity = 0;
         for (int i = 0; i < lodSettings.Count; i++)
         {
@@ -100,75 +123,78 @@ public class GPUSkinning : MonoBehaviour
             lodCapacity += lodSettings[i].size;
         }
 
-        for (int i = 0; i < crowd.crowdCount; i++)
-        {
-            elementID[i] = i;
-        }
-
-        GPUSkinMaterial = new Material(GPUSkinShader);
-        instanceProperties = new MaterialPropertyBlock();
-
-        // Retrieve bone and material information (do only once since we assume all lod share the same bone setting)
-        GPUSkinMaterial.CopyPropertiesFromMaterial(lodSettings[0].mesh.GetComponent<SkinnedMeshRenderer>().sharedMaterial);
-        GPUSkinMaterial.enableInstancing = true;
-        ToggleKeyword(GPUSkinMaterial, mortonSort, "MORTON_CODE", "XY_INDEXING");
-
-        // Load baked animations and discard built-in animator
-        LoadBakedAnimations();
-
-        if (!HardwareAdapter.MortonSortEnabled)
-        {
-            GPUSkinMaterialSimple = new Material(GPUSkinShaderSimple) { enableInstancing = true };
-            GPUSkinMaterialSimple.CopyPropertiesFromMaterial(lodSettings[2].mesh.GetComponent<SkinnedMeshRenderer>().sharedMaterial);
-            GPUSkinMaterialSimple.CopyPropertiesFromMaterial(GPUSkinMaterial);
-        }
-
-        foreach (LODSettings lod in lodSettings)
-        {
-            RegisterLOD(lod.mesh);
-        }
-
         LODSettings lastLOD = lodSettings.Last();
         while (crowd.crowdCount > lodCapacity)
         {
             LODSettings lod = new LODSettings
             {
                 distance = lastLOD.distance,
-                mesh = lastLOD.mesh,
+                lodPrefab = lastLOD.lodPrefab,
                 size = Math.Min(crowd.crowdCount - lodCapacity, 1000)
             };
             lod.maxSize = lod.size;
 
             lodSettings.Add(lod);
-            meshLODs.Add(meshLODs.Last());
-            instanceLODs.Add(new InstanceLOD(lodSettings[instanceLODs.Count].maxSize));
+
+            instanceLODs.Add(new InstanceLOD(lod.maxSize, instanceLODs.Last().Mesh));
 
             lodCapacity += lod.size;
         }
         instanceProperties.SetVectorArray("_AnimState", instanceLODs[2].AnimStates);
-
-        // Controls
-        InitControls();
-
-        // Spawn crowd
-        crowd.Spawn();
-        meshRadius = crowd.MeshRadius * 2;
-
-        StartCoroutine("ReOrder");
-        //StartCoroutine("AdaptPerformance");
     }
 
-    bool LoadBakedAnimations()
+    void ProcessRenderData()
+    {
+        for (int i = 0; i < crowd.crowdCount; i++)
+        {
+            elementID[i] = i;
+        }
+        SkinnedMeshRenderer firstLODRenderer = lodSettings[0].lodPrefab.GetComponent<SkinnedMeshRenderer>();
+
+        // Init materials for rendering
+        GPUSkinMaterial = new Material(GPUSkinShader) { enableInstancing = true };
+        instanceProperties = new MaterialPropertyBlock();
+        GPUSkinMaterial.CopyPropertiesFromMaterial(firstLODRenderer.sharedMaterial);
+        ToggleKeyword(GPUSkinMaterial, mortonSort, "MORTON_CODE", "XY_INDEXING");
+        LoadBakedAnimations(ref GPUSkinMaterial);
+
+        if (!HardwareAdapter.MortonSortEnabled)
+        {
+            GPUSkinMaterialSimple = new Material(GPUSkinShaderSimple) { enableInstancing = true };
+            GPUSkinMaterialSimple.CopyPropertiesFromMaterial(lodSettings[2].lodPrefab.GetComponent<SkinnedMeshRenderer>().sharedMaterial);
+            GPUSkinMaterialSimple.CopyPropertiesFromMaterial(GPUSkinMaterial);
+        }
+
+        // Process weapons
+        int maxDrawnWeapon = lodSettings[0].size + lodSettings[1].size;
+        foreach (Mesh mesh in AvailableWeapons)
+        {
+            weaponBatch.Add(new InstanceLOD(maxDrawnWeapon, ProcessMesh(mesh)));
+        }
+
+        // Process character meshes
+        for (int i = 0; i < lodSettings.Count; i++)
+        {
+            LODSettings lod = lodSettings[i];
+            Mesh meshNoWeapon = ProcessMesh(lod.lodPrefab.GetComponent<SkinnedMeshRenderer>().sharedMesh);
+
+            instanceLODs.Add(new InstanceLOD(lod.size, meshNoWeapon));
+
+            Destroy(lod.lodPrefab);
+        }
+    }
+
+    bool LoadBakedAnimations(ref Material mat)
     {
         Texture2D[] bakedAnimation = new Texture2D[NUM_TEXTURE];
         for (int i = 0; i < NUM_TEXTURE; i++)
         {
             string texturePath = string.Format(
-                "BakedAnimations/{0}_{2}{1}", gameObject.name, i, mortonSort ? "BakedAnimation_Morton" : "BakedAnimation");
+                "BakedAnimations/{0}_BakedAnimation_{1}{2}", gameObject.name, mortonSort ? "Morton" : "XY", i);
             bakedAnimation[i] = Resources.Load<Texture2D>(texturePath);
             if (bakedAnimation[i] == null)
             {
-                Debug.LogError("Baked animation assets not found or not valid. Please bake animation first");
+                Debug.LogError(string.Format("Baked animation {0} not found or not valid. Please bake animation first", texturePath));
                 return false;
             }
         }
@@ -192,25 +218,24 @@ public class GPUSkinning : MonoBehaviour
         crowd.FrameOffset = frameOffset;
         for (int i = 0; i < NUM_TEXTURE; i++)
         {
-            GPUSkinMaterial.SetTexture("_Animation" + i, bakedAnimation[i]);
+            mat.SetTexture("_Animation" + i, bakedAnimation[i]);
         }
 
         if (mortonSort)
         {
             int pow = (int)(Math.Log(bakedAnimation[0].width, 2) + 0.5);
-            GPUSkinMaterial.SetInt("_size", (int)textureSize.x);
-            GPUSkinMaterial.SetInt("_pow", pow);
+            mat.SetInt("_size", (int)textureSize.x);
+            mat.SetInt("_pow", pow);
         }
 
         return true;
     }
 
     // Fetch information from skinned mesh renderer
-    void RegisterLOD(GameObject child)
+    Mesh ProcessMesh(Mesh originalMesh)
     {
         // Copy the shared mesh to modify it
-        SkinnedMeshRenderer oldSkinnedRenderer = child.GetComponent<SkinnedMeshRenderer>();
-        Mesh mesh = Instantiate(oldSkinnedRenderer.sharedMesh);
+        Mesh mesh = Instantiate(originalMesh);
 
         BoneWeight[] w = mesh.boneWeights;
         Vector4[] boneInfo = new Vector4[mesh.vertexCount];
@@ -249,12 +274,9 @@ public class GPUSkinning : MonoBehaviour
         mesh.vertices = vertices;
         mesh.normals = normals;
 
-        // Register LODs
-        meshLODs.Add(mesh);
-        instanceLODs.Add(new InstanceLOD(lodSettings[instanceLODs.Count].maxSize));
+        mesh.Optimize();
 
-        // Deactive the child to prevent the default mesh renderer
-        child.SetActive(false);
+        return mesh;
     }
 
     #endregion
@@ -308,6 +330,11 @@ public class GPUSkinning : MonoBehaviour
             instanceLODs[i].Reset();
         }
 
+        for (int i = 0; i < weaponBatch.Count; i++)
+        {
+            weaponBatch[i].Reset();
+        }
+
         Plane[] planes = GeometryUtility.CalculateFrustumPlanes(mainCamera);
         foreach (int i in elementID)
         {
@@ -334,9 +361,15 @@ public class GPUSkinning : MonoBehaviour
                         break;
                     }
                 }
+
                 if (lod < lodSettings.Count)
                 {
                     instanceLODs[lod].Push(crowd.Transforms[i], crowd.AnimationStatusGPU[i]);
+                }
+
+                if (weaponBatch.Count > 0 && lod < 2)
+                {
+                    weaponBatch[crowd.Weapons[i]].Push(crowd.Transforms[i], crowd.AnimationStatusGPU[i]);
                 }
             }
         }
@@ -349,26 +382,39 @@ public class GPUSkinning : MonoBehaviour
 
         for (int i = 0; i < instanceLODs.Count; i++)
         {
-            profiler.Log(string.Format("LOD_{0}: {1}", i, instanceLODs[i].Count));
+            InstanceLOD lod = instanceLODs[i];
 
-            instanceProperties.SetVectorArray("_AnimState", instanceLODs[i].AnimStates);
+            profiler.Log(string.Format("LOD_{0}: {1}", i, lod.Count));
+
+            instanceProperties.SetVectorArray("_AnimState", lod.AnimStates);
 
             // We assume single mesh here (no sub meshes)
             if (i < 2)
             {
                 Graphics.DrawMeshInstanced(
-                    meshLODs[i], 0, GPUSkinMaterial,
-                    instanceLODs[i].Transforms, instanceLODs[i].Count, instanceProperties,
+                    lod.Mesh, 0, GPUSkinMaterial,
+                    lod.Transforms, lod.Count, instanceProperties,
                     shadowCastingMode, shadowReceivingMode);
             }
             else
             {
                 Graphics.DrawMeshInstanced(
-                    meshLODs[i], 0, HardwareAdapter.MortonSortEnabled ? GPUSkinMaterial : GPUSkinMaterialSimple,
-                    instanceLODs[i].Transforms, instanceLODs[i].Count, instanceProperties,
+                    lod.Mesh, 0, HardwareAdapter.MortonSortEnabled ? GPUSkinMaterial : GPUSkinMaterialSimple,
+                    lod.Transforms, lod.Count, instanceProperties,
                     UnityEngine.Rendering.ShadowCastingMode.Off, false);
             }
+        }
 
+        // Draw weapons
+        for (int i = 0; i < weaponBatch.Count; i++)
+        {
+            InstanceLOD batch = weaponBatch[i];
+            instanceProperties.SetVectorArray("_AnimState", batch.AnimStates);
+
+            Graphics.DrawMeshInstanced(
+                batch.Mesh, 0, GPUSkinMaterial,
+                batch.Transforms, batch.Count, instanceProperties,
+                shadowCastingMode, shadowReceivingMode);
         }
     }
 

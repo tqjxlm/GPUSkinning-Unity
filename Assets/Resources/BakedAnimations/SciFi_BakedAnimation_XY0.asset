@@ -6,7 +6,7 @@ Texture2D:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SciFi_BakedAnimation0
+  m_Name: SciFi_BakedAnimation_XY0
   m_ImageContentsHash:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
