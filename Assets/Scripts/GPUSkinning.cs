@@ -12,16 +12,18 @@ class IntanceBatch
 
     public Vector4[] AnimStates { get; private set; }
 
-    public int Count { get; private set; }
+    public int Count { get; private set; } = 0;
 
     public Mesh Mesh { get; private set; }
+
+    public MaterialPropertyBlock InstanceProperties { get; private set; } = new MaterialPropertyBlock();
 
     public IntanceBatch(int crowdCount, Mesh mesh)
     {
         Transforms = new Matrix4x4[crowdCount];
         AnimStates = new Vector4[crowdCount];
-        Count = 0;
         Mesh = mesh;
+        InstanceProperties.SetVectorArray("_AnimState", AnimStates);
     }
 
     public void Reset()
@@ -72,7 +74,6 @@ public class GPUSkinning : MonoBehaviour
     Material GPUSkinMaterial;
     Material GPUSkinMaterialSimple;
     Material GPUWeaponMaterial;
-    MaterialPropertyBlock instanceProperties;
     Texture2D[] bakedAnimation;
     bool mortonSort = true;
     float meshRadius;
@@ -143,7 +144,6 @@ public class GPUSkinning : MonoBehaviour
 
             lodCapacity += lod.size;
         }
-        instanceProperties.SetVectorArray("_AnimState", instanceLODs[2].AnimStates);
     }
 
     Material ApplyMaterialWithGPUSkinning(Shader shader, Material originalMaterial)
@@ -174,7 +174,6 @@ public class GPUSkinning : MonoBehaviour
             elementID[i] = i;
         }
 
-        instanceProperties = new MaterialPropertyBlock();
         LoadBakedAnimations();
 
         // Init materials for rendering
@@ -282,6 +281,8 @@ public class GPUSkinning : MonoBehaviour
         mesh.tangents = boneInfo;
         mesh.vertices = vertices;
         mesh.normals = normals;
+
+        mesh.Optimize();
 
         return mesh;
     }
@@ -391,18 +392,18 @@ public class GPUSkinning : MonoBehaviour
         for (int i = 0; i < weaponBatch.Count; i++)
         {
             IntanceBatch batch = weaponBatch[i];
-            instanceProperties.SetVectorArray("_AnimState", batch.AnimStates);
+            batch.InstanceProperties.SetVectorArray("_AnimState", batch.AnimStates);
 
             Graphics.DrawMeshInstanced(
                 batch.Mesh, 0, GPUWeaponMaterial,
-                batch.Transforms, batch.Count, instanceProperties,
+                batch.Transforms, batch.Count, batch.InstanceProperties,
                 shadowCastingMode, shadowReceivingMode);
         }
 
         for (int i = 0; i < instanceLODs.Count; i++)
         {
             IntanceBatch lod = instanceLODs[i];
-            instanceProperties.SetVectorArray("_AnimState", lod.AnimStates);
+            lod.InstanceProperties.SetVectorArray("_AnimState", lod.AnimStates);
 
             profiler.Log(string.Format("LOD_{0}: {1}", i, lod.Count));
 
@@ -410,14 +411,14 @@ public class GPUSkinning : MonoBehaviour
             {
                 Graphics.DrawMeshInstanced(
                     lod.Mesh, 0, GPUSkinMaterial,
-                    lod.Transforms, lod.Count, instanceProperties,
+                    lod.Transforms, lod.Count, lod.InstanceProperties,
                     shadowCastingMode, shadowReceivingMode);
             }
             else
             {
                 Graphics.DrawMeshInstanced(
                     lod.Mesh, 0, GPUSkinMaterialSimple,
-                    lod.Transforms, lod.Count, instanceProperties,
+                    lod.Transforms, lod.Count, lod.InstanceProperties,
                     UnityEngine.Rendering.ShadowCastingMode.Off, false);
             }
         }

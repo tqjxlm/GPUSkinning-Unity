@@ -56,7 +56,6 @@
 		#pragma target 3.5
 
 		sampler2D _MainTex;
-		fixed4 _Color;
 
 		#include "GPUSkinning.cginc"
 		void vert(inout appdata v) {
@@ -68,7 +67,7 @@
 		};
 
 		void surf(Input IN, inout SurfaceOutput o) {
-			fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
+			fixed4 c = tex2D(_MainTex, IN.uv_MainTex);
 			o.Albedo = c.rgb;
 		}
 		ENDCG
