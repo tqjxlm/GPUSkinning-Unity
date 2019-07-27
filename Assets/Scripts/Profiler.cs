@@ -1,16 +1,28 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
 
-public class ExternalProfiler : MonoBehaviour
+public class Profiler : MonoBehaviour
 {
+    public int benchmarkDuration = 3;
+
     public bool DisplayOn = true;
-    public float FPS { get; private set; }
+
+    public float FPS { get; private set; } = 60.0f;
+
+    public float AverageFPS { get; private set; } = 60.0f;
 
     float deltaTime = 0.0f;
 
+    float measuredFPS = 0.0f;
+
     List<string> lines = new List<string>();
 
+    void Start()
+    {
+        StartCoroutine("SampleFPS");
+    }
 
     void Update()
     {
@@ -18,7 +30,21 @@ public class ExternalProfiler : MonoBehaviour
         FPS = 1.0f / deltaTime;
     }
 
-    public void Reset()
+    IEnumerator SampleFPS()
+    {
+        for (int i = 1; ; i++)
+        {
+            measuredFPS += FPS;
+            if (i % benchmarkDuration == 0)
+            {
+                AverageFPS = measuredFPS / benchmarkDuration;
+                measuredFPS = 0;
+            }
+            yield return new WaitForSeconds(1.0f);
+        }
+    }
+
+    public void ResetDisplay()
     {
         if (DisplayOn)
         {

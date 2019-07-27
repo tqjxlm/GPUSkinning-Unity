@@ -2049,6 +2049,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1643037914}
   - component: {fileID: 681666923}
+  - component: {fileID: 1643037910}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -2056,6 +2057,20 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &1643037910
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1643037909}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 911b029cf79373b44a4aac3bc8cf7c26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  benchmarkDuration: 3
+  DisplayOn: 1
 --- !u!4 &1643037914
 Transform:
   m_ObjectHideFlags: 0
@@ -2526,6 +2541,11 @@ PrefabInstance:
       propertyPath: WeaponMaterial
       value: 
       objectReference: {fileID: 2100000, guid: 1666fb81395f51e4293b01cca8f58481, type: 2}
+    - target: {fileID: 7900266254383884523, guid: c2f72cc1c5ec2a747bcc0307489e06c8,
+        type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 4300000, guid: 2b3cbf01e3ffacb4bbe4ed145a8b5b75, type: 2}
     - target: {fileID: 7900266254313169124, guid: c2f72cc1c5ec2a747bcc0307489e06c8,
         type: 3}
       propertyPath: m_Mesh

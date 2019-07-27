@@ -7,7 +7,7 @@ public class HardwareAdapter
 
     static readonly string prefKey = "MortonSortEnabled";
 
-    public static int TargetFrameRate { get; private set; } = 25;
+    public static int TargetFrameRate { get; private set; } = 24;
 
     [RuntimeInitializeOnLoadMethod]
     static void OnRuntimeMethodLoad()
