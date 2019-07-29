@@ -35,6 +35,16 @@ UNITY_INSTANCING_BUFFER_END(Props)
 
 #endif
 
+#if XY_INDEXING
+	uniform float _foldingOffset;
+
+	inline float4 unfoldXY(half x, half y)
+	{
+		int fold = (int)y;
+		return float4(_foldingOffset * fold + x, y - fold, 0, 0);
+	}
+#endif
+
 inline half4 sampleRow(sampler2D tex, float4x4 uv, half4 weights)
 {
 	half4x4 samples = transpose(half4x4(
@@ -92,10 +102,10 @@ void applySkin(inout appdata v)
 		#endif
 		#if XY_INDEXING
 			float4x4 uv = float4x4(
-				v.bone[0], anim[0], 0, 0,
-				v.bone[0], anim[2], 0, 0,
-				v.bone[1], anim[0], 0, 0,
-				v.bone[1], anim[2], 0, 0);
+				unfoldXY(v.bone[0], anim[0]),
+				unfoldXY(v.bone[0], anim[2]),
+				unfoldXY(v.bone[1], anim[0]),
+				unfoldXY(v.bone[1], anim[2]));
 		#endif
 
 		half w_bone0 = v.bone[2];
@@ -129,8 +139,8 @@ void applySkinSimple(inout appdata v)
 		#endif
 		#if XY_INDEXING
 			float2x4 uv = float2x4(
-				v.bone[0], anim[0], 0, 0,
-				v.bone[1], anim[0], 0, 0);
+				unfoldXY(v.bone[0], anim[0]),
+				unfoldXY(v.bone[1], anim[0]));
 		#endif
 
 		half2 weights = half2(v.bone[2], 1 - v.bone[2]);

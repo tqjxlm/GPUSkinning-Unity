@@ -64,17 +64,20 @@ public class GPUSkinning : MonoBehaviour
     public List<Mesh> AvailableWeapons;
     public Material WeaponMaterial;
 
+    // Component references
     CrowdManager crowd;
     Camera mainCamera;
     Profiler profiler;
 
-    Vector2 textureSize;
-
-    // Render info
+    // Materials
     Material GPUSkinMaterial;
     Material GPUSkinMaterialSimple;
     Material GPUWeaponMaterial;
     Texture2D[] bakedAnimation;
+    public int TextureSize { get; private set; }
+    int boneNumber;
+
+    // Render info
     bool mortonSort = true;
     float meshRadius;
     List<IntanceBatch> LODBatches = new List<IntanceBatch>();
@@ -163,10 +166,12 @@ public class GPUSkinning : MonoBehaviour
 
         if (mortonSort)
         {
-            int pow = (int)(Math.Log(textureSize.x, 2) + 0.5);
-            mat.SetInt("_size", (int)textureSize.x);
+            int pow = (int)(Math.Log(TextureSize, 2) + 0.5);
+            mat.SetInt("_size", TextureSize);
             mat.SetInt("_pow", pow);
         }
+
+        mat.SetFloat("_foldingOffset", (float)boneNumber / TextureSize);
 
         return mat;
     }
@@ -179,10 +184,12 @@ public class GPUSkinning : MonoBehaviour
             elementID[i] = i;
         }
 
+        SkinnedMeshRenderer firstLODRenderer = lodSettings[0].lodPrefab.GetComponent<SkinnedMeshRenderer>();
+        boneNumber = firstLODRenderer.bones.Count();
+
         LoadBakedAnimations();
 
         // Init materials for rendering
-        SkinnedMeshRenderer firstLODRenderer = lodSettings[0].lodPrefab.GetComponent<SkinnedMeshRenderer>();
         GPUSkinMaterial = ApplyMaterialWithGPUSkinning(GPUSkinShader, firstLODRenderer.sharedMaterial);
         GPUSkinMaterialSimple = ApplyMaterialWithGPUSkinning(GPUSkinShaderSimple, firstLODRenderer.sharedMaterial);
 
@@ -226,7 +233,7 @@ public class GPUSkinning : MonoBehaviour
             }
         }
 
-        textureSize = new Vector2(bakedAnimation[0].width, bakedAnimation[1].height);
+        TextureSize = bakedAnimation[1].height;
 
         // Get frame info. It will be used in CrowdManager to calculate Y index for sampling the animation texture.
         float[] frameLength = new float[crowd.Animations.Count];
@@ -236,8 +243,8 @@ public class GPUSkinning : MonoBehaviour
         {
             var anim = crowd.Animations[i];
             MathHelper.GetAnimationTime(anim.clip, mortonSort ? 1 : anim.sampleRate, out float animationTimeStep, out uint keyFrameCnt);
-            frameLength[i] = mortonSort ? keyFrameCnt : keyFrameCnt / textureSize.y;
-            frameOffset[i] = mortonSort ? currentFrame : currentFrame / textureSize.y;
+            frameLength[i] = mortonSort ? keyFrameCnt : (float)keyFrameCnt / TextureSize;
+            frameOffset[i] = mortonSort ? currentFrame : currentFrame / TextureSize;
             currentFrame += keyFrameCnt + ATLAS_PADDING;
         }
 
@@ -272,8 +279,8 @@ public class GPUSkinning : MonoBehaviour
             else
             {
                 boneInfo[i] = new Vector4(
-                    (0.5f + w[i].boneIndex0) / textureSize.x,
-                    (0.5f + w[i].boneIndex1) / textureSize.x,
+                    (0.5f + w[i].boneIndex0) / TextureSize,
+                    (0.5f + w[i].boneIndex1) / TextureSize,
                     weight
                     );
             }

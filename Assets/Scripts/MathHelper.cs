@@ -95,4 +95,9 @@ public class MathHelper
         animationTimeStep = 1.0f / clip.frameRate / scale;
         keyFrameCnt = (uint)(animationLength / animationTimeStep + 0.5);
     }
+
+    static public uint UnfoldIndex(uint globalIndex, uint foldingSize)
+    {
+        return globalIndex % foldingSize;
+    }
 }

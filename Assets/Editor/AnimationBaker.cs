@@ -78,10 +78,12 @@ public class AnimationBaker
         }
 
         int size = 1;
-        while (size < totalFrame)
+        int foldings;
+        do
         {
             size *= 2;
-        }
+            foldings = size / allBones.Count;
+        } while (foldings * size < totalFrame);
 
         // Allocate texture: NUM_TEXTURE * [MAXIMUM_BONE, totalFrame]
         Texture2D[] animTexture = new Texture2D[NUM_TEXTURE];
@@ -112,24 +114,27 @@ public class AnimationBaker
                 for (uint bone = 0; bone < allBones.Count; bone++)
                 {                   
                     DualQuaternion dq = boneTransforms[bone];
-                    if (dq == null)
-                    {
-                        continue;
-                    }
-
-                    uint y = frameOffset + frame;
-                    uint x = bone;
+                    if (dq == null) continue;
                     var row0 = dq.real.ToVector4();
                     var row1 = dq.dual.ToVector4();
 
+                    // Logical index
+                    uint globalFrameIndex = frameOffset + frame;
+                    uint fold = globalFrameIndex / (uint)size;
+
+                    uint y = globalFrameIndex % (uint)size;
+                    uint x = bone + fold * (uint)allBones.Count;
+
                     if (morton)
                     {
+                        // Actual flat index
                         uint z = MathHelper.EncodeMorton(x, y);
                         pixels[0][z] = row0;
                         pixels[1][z] = row1;
                     }
                     else
                     {
+                        // Actual flat index
                         uint z = y * (uint)size + x;
                         pixels[0][z] = row0;
                         pixels[1][z] = row1;

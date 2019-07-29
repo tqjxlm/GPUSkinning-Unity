@@ -90,6 +90,8 @@ public class CrowdManager : MonoBehaviour
 
     Vector3 cameraPosition2D;
 
+    GPUSkinning gpuSkinning;
+
     #endregion
 
     #region runtime status
@@ -153,6 +155,7 @@ public class CrowdManager : MonoBehaviour
     {
         mortonSort = HardwareAdapter.MortonSortEnabled;
         mainCamera = Camera.main;
+        gpuSkinning = GetComponent<GPUSkinning>();
     }
 
     // Spawn a crowd
@@ -278,69 +281,72 @@ public class CrowdManager : MonoBehaviour
             Positions2D[i], Rotations[i], Vector3.one);
     }
 
-    void UpdateStatus(ref PlayStatus transition, ref Vector4 state, float sqrSpeed, float deltaTime)
+    void UpdateStatus(ref PlayStatus play, ref Vector4 state, float sqrSpeed, float deltaTime)
     {
         // Check if a transition should happen
-        int current = transition.dst;
+        int current = play.dst;
         int next = stateDefinition[current].nextState(sqrSpeed);
-        if (stateDefinition[transition.dst].speed != null)
+        if (stateDefinition[play.dst].speed != null)
         {
-            transition.dstSpd = stateDefinition[transition.dst].speed(sqrSpeed);
+            play.dstSpd = stateDefinition[play.dst].speed(sqrSpeed);
         }
 
         if (next != current)
         {
-            BeginAnimTransition(ref transition, ref state, sqrSpeed, next);
+            BeginAnimTransition(ref play, ref state, sqrSpeed, next);
         }
     }
 
-    void UpdateAnimation(ref PlayStatus transition, ref Vector4 state, float deltaTime)
+    void UpdateAnimation(ref PlayStatus play, ref Vector4 state, float deltaTime)
     {
         // Play the first animation
-        int id = transition.dst;
-        transition.dstTime += deltaTime / Animations[id].clip.length * transition.dstSpd;
+        int id = play.dst;
+        play.dstTime += deltaTime / Animations[id].clip.length * play.dstSpd;
 
         // Play the second animation if in transition
         if (state[3] > 0)
         {
             UpdateAnimTransition(ref state, deltaTime);
-            id = transition.src;
-            transition.srcTime += deltaTime / Animations[id].clip.length * transition.srcSpd;
+            id = play.src;
+            play.srcTime += deltaTime / Animations[id].clip.length * play.srcSpd;
         }
 
         // Frame index suited for use in GPU.
-        // Formula: frame_index = normalized_time * length_scale + global_offset
+        // Formula: global_frame_index = normalized_time * length_scale + global_offset
+        float inSrc = (play.srcTime - (int)play.srcTime) * FrameLength[play.src];
+        float inDst = (play.dstTime - (int)play.dstTime) * FrameLength[play.dst];
+        float beforeSrc = FrameOffset[play.src];
+        float beforeDst = FrameOffset[play.dst];
+
         if (mortonSort)
         {
-            state[2] = MathHelper.EncodeMorton(
-                (uint)((transition.srcTime - (int)transition.srcTime) * FrameLength[transition.src]) + (uint)FrameOffset[transition.src]);
-            state[0] = MathHelper.EncodeMorton(
-                (uint)((transition.dstTime - (int)transition.dstTime) * FrameLength[transition.dst]) + (uint)FrameOffset[transition.dst]);
+            state[2] = MathHelper.EncodeMorton(((uint)inSrc + (uint)beforeSrc) % (uint)gpuSkinning.TextureSize);
+            state[0] = MathHelper.EncodeMorton(((uint)inDst + (uint)beforeDst) % (uint)gpuSkinning.TextureSize);
         }
         else
         {
-            state[2] = (transition.srcTime - (int)transition.srcTime) * FrameLength[transition.src] + FrameOffset[transition.src];
-            state[0] = (transition.dstTime - (int)transition.dstTime) * FrameLength[transition.dst] + FrameOffset[transition.dst];
+            state[2] = inSrc + beforeSrc;
+            state[0] = inDst + beforeDst;
         }
     }
 
-    void BeginAnimTransition(ref PlayStatus transition, ref Vector4 state, float sqrSpeed, int endAnim)
+    void BeginAnimTransition(ref PlayStatus play, ref Vector4 state, float sqrSpeed, int endAnim)
     {
         if (state[3] < float.Epsilon)
         {
             // Set current animation as src, endAnim as dst
-            transition.src = transition.dst;
-            transition.dst = endAnim;
-            transition.srcTime = transition.dstTime;
-            transition.dstTime = 0;
-            transition.srcSpd = transition.dstSpd;
-            if (stateDefinition[transition.dst].speed != null)
+            play.src = play.dst;
+            play.dst = endAnim;
+            play.srcTime = play.dstTime;
+            play.dstTime = 0;
+            play.srcSpd = play.dstSpd;
+            if (stateDefinition[play.dst].speed != null)
             {
-                transition.dstSpd = stateDefinition[transition.dst].speed(sqrSpeed);
+                play.dstSpd = stateDefinition[play.dst].speed(sqrSpeed);
             }
             else
             {
-                transition.dstSpd = 1;
+                play.dstSpd = 1;
             }
 
             // Starting blend weight
