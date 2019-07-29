@@ -37,7 +37,7 @@
 		half4 LightingSimpleLambert (SurfaceOutput s, half3 lightDir, half atten) {
             half NdotL = dot(s.Normal, lightDir);
             half4 c;
-            c.rgb = s.Albedo * _LightColor0.rgb * NdotL * NdotL;
+            c.rgb = s.Albedo * _LightColor0.rgb * pow(NdotL, 4);
             c.a = s.Alpha;
             return c;
           }

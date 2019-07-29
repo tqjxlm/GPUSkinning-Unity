@@ -76,16 +76,49 @@ public class MeshCombiner
         Debug.Log("bone size: " + boneCollections[0].Count);
     }
 
-    [MenuItem("GameObject/Deform Mesh", false, 0)]
-    public static void DeformMesh()
+    [MenuItem("GameObject/Deform Mesh/Fat", false, 0)]
+    public static void DeformMeshFat()
     {
         GameObject go = Selection.activeGameObject;
         MeshFilter meshFilter = go.GetComponent<MeshFilter>();
-        Mesh newMesh = Object.Instantiate(meshFilter.mesh);
+        Mesh newMesh = Object.Instantiate(meshFilter.sharedMesh);
         Vector3[] vertices = newMesh.vertices;
+        Vector3 center = Vector3.zero;
         for (int i = 0; i < newMesh.vertexCount; i++)
         {
-            vertices[i].y *= 1.5f;
+            center += vertices[i];
+        }
+        center /= newMesh.vertexCount;
+
+        for (int i = 0; i < newMesh.vertexCount; i++)
+        {
+            vertices[i].x = vertices[i].x + (vertices[i].x - center.x) * vertices[i].y;
+            vertices[i].z = vertices[i].z + (vertices[i].z - center.z) * vertices[i].y;
+        }
+        newMesh.vertices = vertices;
+
+        string path = GetStoragePath("DeformedMeshes");
+        string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + "_Deformed.asset");
+        AssetDatabase.CreateAsset(newMesh, meshPath);
+        AssetDatabase.SaveAssets();
+    }
+
+    [MenuItem("GameObject/Deform Mesh/Long", false, 0)]
+    public static void DeformMeshLong()
+    {
+        GameObject go = Selection.activeGameObject;
+        MeshFilter meshFilter = go.GetComponent<MeshFilter>();
+        Mesh newMesh = Object.Instantiate(meshFilter.sharedMesh);
+        Vector3[] vertices = newMesh.vertices;
+        float minY = float.MaxValue;
+        for (int i = 0; i < newMesh.vertexCount; i++)
+        {
+            minY = Mathf.Min(minY, vertices[i].y);
+        }
+
+        for (int i = 0; i < newMesh.vertexCount; i++)
+        {
+            vertices[i].y = vertices[i].y + (vertices[i].y - minY) * 1.5f;
         }
         newMesh.vertices = vertices;
 
