@@ -137,6 +137,7 @@ public class CrowdManager : MonoBehaviour
         GridID = new int[crowdCount];
         Weapons = new int[crowdCount];
 
+        // State machine definitions
         stateDefinition = new AnimationState[Animations.Count];
         stateDefinition[0] = new AnimationState(spd => spd < 0.1 ? 0 : 1);
         stateDefinition[1] = new AnimationState(spd => spd < 0.1 ? 0 : (spd >= 9 ? 2 : 1), spd => spd / 9 + 0.3f);
@@ -320,11 +321,13 @@ public class CrowdManager : MonoBehaviour
 
         if (mortonSort)
         {
+            // For Morton Sort, the index is unfolded here and decoded in the shader
             state[2] = MathHelper.EncodeMorton(((uint)inSrc + (uint)beforeSrc) % (uint)gpuSkinning.TextureSize);
             state[0] = MathHelper.EncodeMorton(((uint)inDst + (uint)beforeDst) % (uint)gpuSkinning.TextureSize);
         }
         else
         {
+            // For XY indexing, the index is unfolded in the shader
             state[2] = inSrc + beforeSrc;
             state[0] = inDst + beforeDst;
         }

@@ -2474,7 +2474,7 @@ PrefabInstance:
     - target: {fileID: 7900266254765226817, guid: c2f72cc1c5ec2a747bcc0307489e06c8,
         type: 3}
       propertyPath: m_Name
-      value: SciFi-NoWeapon
+      value: SciFi
       objectReference: {fileID: 0}
     - target: {fileID: 7900266254765226817, guid: c2f72cc1c5ec2a747bcc0307489e06c8,
         type: 3}
@@ -2765,6 +2765,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalPosition.z
       value: 0.082511514
+      objectReference: {fileID: 0}
+    - target: {fileID: 7900266254383884522, guid: c2f72cc1c5ec2a747bcc0307489e06c8,
+        type: 3}
+      propertyPath: m_Name
+      value: SciFi_LOD0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7900266254313169127, guid: c2f72cc1c5ec2a747bcc0307489e06c8,
+        type: 3}
+      propertyPath: m_Name
+      value: SciFi_LOD1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7900266254753295722, guid: c2f72cc1c5ec2a747bcc0307489e06c8,
+        type: 3}
+      propertyPath: m_Name
+      value: SciFi_LOD2
       objectReference: {fileID: 0}
     - target: {fileID: 7900266255551396740, guid: c2f72cc1c5ec2a747bcc0307489e06c8,
         type: 3}
