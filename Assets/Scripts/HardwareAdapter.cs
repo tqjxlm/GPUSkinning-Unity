@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 public class HardwareAdapter
 {
-    public static bool MortonSortEnabled { get; private set; } = true;
+    public static bool MortonSortEnabled { get; private set; } = false;
 
     static readonly string prefKey = "MortonSortEnabled";
 
@@ -19,8 +19,8 @@ public class HardwareAdapter
         if (!PlayerPrefs.HasKey(prefKey))
         {
             // Detect the default settings at first start
-            bool isMaliGPU = SystemInfo.graphicsDeviceName.ToLower().Contains("mali");
-            MortonSortEnabled = !isMaliGPU;
+            //bool isMaliGPU = SystemInfo.graphicsDeviceName.ToLower().Contains("mali");
+            //MortonSortEnabled = !isMaliGPU;
 
             PlayerPrefs.SetInt(prefKey, MortonSortEnabled ? 1 : 0);
             PlayerPrefs.Save();
