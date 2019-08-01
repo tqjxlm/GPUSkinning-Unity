@@ -96,6 +96,7 @@ public class GPUSkinning : MonoBehaviour
 
     int[] weaponID;
     float[] weaponDistance;
+    int weaponDrawCount;
 
     // Control
     UnityEngine.Rendering.ShadowCastingMode shadowCastingMode;
@@ -444,6 +445,8 @@ public class GPUSkinning : MonoBehaviour
 
         if (weaponBatches.Count > 0)
         {
+            weaponDrawCount = 0;
+            int maxCount = lodSettings[0].size + lodSettings[1].size;
             for (int i = 0; i < weaponBatches.Count; i++)
             {
                 weaponBatches[i].Reset();
@@ -465,7 +468,7 @@ public class GPUSkinning : MonoBehaviour
                 }
 
                 // LOD picking
-                if (!culled)
+                if (!culled && weaponDrawCount < maxCount)
                 {
                     int userID = weaponMgr.Users[i];
                     if (userID != -1)
@@ -476,6 +479,7 @@ public class GPUSkinning : MonoBehaviour
                     {
                         weaponBatches[weaponType].Push(weaponMgr.Transforms[i], weaponMgr.NullAnimStatus);
                     }
+                    weaponDrawCount++;
                 }
             }
         }
@@ -485,9 +489,9 @@ public class GPUSkinning : MonoBehaviour
     void RenderInstanced()
     {
         profiler.ResetDisplay();
-        profiler.Log("Instance count: " + LODBatches.Sum(item => item.Count));
 
         // Draw weapons (without LOD)
+        profiler.Log("Weapon count: " + weaponBatches.Sum(item => item.Count));
         for (int i = 0; i < weaponBatches.Count; i++)
         {
             InstanceBatch batch = weaponBatches[i];
@@ -500,6 +504,7 @@ public class GPUSkinning : MonoBehaviour
         }
 
         // Draw characters (for every LOD)
+        profiler.Log("Instance count: " + LODBatches.Sum(item => item.Count));
         for (int i = 0; i < LODBatches.Count; i++)
         {
             InstanceBatch lod = LODBatches[i];
