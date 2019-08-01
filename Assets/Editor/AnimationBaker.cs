@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using System;
 
 public class AnimationBaker
 {
@@ -9,6 +10,7 @@ public class AnimationBaker
 
     static DualQuaternion[] boneTransforms;
     static Dictionary<string, int> allBones;
+    static int weaponBoneID;
 
     // Retrieve bone mapping, bind poses and material properties
     static Dictionary<string, int> RetrieveBoneDictionary(SkinnedMeshRenderer renderer)
@@ -45,6 +47,7 @@ public class AnimationBaker
         GameObject go = Selection.activeGameObject;
         Animator animator = go.GetComponent<Animator>();
         CrowdManager crowd = go.GetComponent<CrowdManager>();
+        GPUSkinning renderer = go.GetComponent<GPUSkinning>();
 
         if (animator == null || crowd == null)
         {
@@ -55,6 +58,11 @@ public class AnimationBaker
         animator.speed = 0;
         allBones = RetrieveBoneDictionary(go.GetComponentInChildren<SkinnedMeshRenderer>());
         boneTransforms = new DualQuaternion[allBones.Count];
+        if (!allBones.TryGetValue(renderer.weaponBone.name, out weaponBoneID))
+        {
+            weaponBoneID = -1;
+            Debug.Log("Weapon binding bone is not valid, skipping...");
+        }
 
         // Bake character bones
         BakeAnimation(crowd, animator, go, true);
@@ -71,35 +79,70 @@ public class AnimationBaker
 
         // Decide texture size
         uint totalFrame = 0;
+        uint maxFrame = 0;
         foreach (AnimationResource anim in animations)
         {
             MathHelper.GetAnimationTime(anim.clip, morton ? 1 : anim.sampleRate, out float animationTimeStep, out uint keyFrameCnt);
             totalFrame += keyFrameCnt + ATLAS_PADDING;
+            maxFrame = Math.Max(maxFrame, keyFrameCnt);
         }
 
-        int size = 1;
-        int foldings;
-        do
-        {
-            size *= 2;
-            foldings = size / allBones.Count;
-        } while (foldings * size < totalFrame);
-
         // Allocate texture: NUM_TEXTURE * [MAXIMUM_BONE, totalFrame]
+        int size = 1;
+        int foldings = 1;
+
+        if (morton)
+        {
+            while (size < totalFrame || size < allBones.Count)
+            {
+                size *= 2;
+            }
+        }
+        else
+        {
+            while (foldings * size < totalFrame)
+            {
+                size *= 2;
+                foldings = size / allBones.Count;
+            }
+        }
+
         Texture2D[] animTexture = new Texture2D[NUM_TEXTURE];
         Color[][] pixels = new Color[NUM_TEXTURE][];
-
         for (int i = 0; i < NUM_TEXTURE; i++)
         {
             animTexture[i] = new Texture2D(
-                size, size, TextureFormat.RGBAHalf, false, false);
+                size, size, TextureFormat.RGBAHalf, false, false)
+            {
+                wrapMode = TextureWrapMode.Mirror
+            };
             pixels[i] = animTexture[i].GetPixels();
+        }
+
+        // Allocate weapon texture
+        int weaponSize = 1;
+        while(weaponSize * weaponSize < totalFrame)
+        {
+            weaponSize *= 2;
+        }
+
+        Texture2D[] weaponTexture = new Texture2D[NUM_TEXTURE];
+        Color[][] weaponPixels = new Color[NUM_TEXTURE][];
+        for (int i = 0; i < NUM_TEXTURE; i++)
+        {
+            weaponTexture[i] = new Texture2D(
+                weaponSize, weaponSize, TextureFormat.RGBAHalf, false, false)
+            {
+                wrapMode = TextureWrapMode.Mirror
+            };
+            weaponPixels[i] = weaponTexture[i].GetPixels();
         }
 
         // Bake for every available animation clip
         uint frameOffset = 0;
-        foreach (AnimationResource anim in animations)
+        for (int animID = 0; animID < animations.Count; animID++)
         {
+            AnimationResource anim = animations[animID];
             AnimationClip clip = anim.clip;
             MathHelper.GetAnimationTime(clip, morton ? 1 : anim.sampleRate, out float animationTimeStep, out uint keyFrameCnt);
 
@@ -118,26 +161,31 @@ public class AnimationBaker
                     var row0 = dq.real.ToVector4();
                     var row1 = dq.dual.ToVector4();
 
-                    // Logical index
                     uint globalFrameIndex = frameOffset + frame;
-                    uint fold = globalFrameIndex / (uint)size;
-
-                    uint y = globalFrameIndex % (uint)size;
-                    uint x = bone + fold * (uint)allBones.Count;
+                    uint z;
 
                     if (morton)
                     {
-                        // Actual flat index
-                        uint z = MathHelper.EncodeMorton(x, y);
-                        pixels[0][z] = row0;
-                        pixels[1][z] = row1;
+                        uint y = globalFrameIndex;
+                        uint x = bone;
+                        z = MathHelper.EncodeMorton(x, y);
                     }
                     else
                     {
-                        // Actual flat index
-                        uint z = y * (uint)size + x;
-                        pixels[0][z] = row0;
-                        pixels[1][z] = row1;
+                        uint y = globalFrameIndex % (uint)size;
+                        uint x = bone + globalFrameIndex / (uint)size * (uint)allBones.Count;
+                        z = y * (uint)size + x;
+                    }
+                    pixels[0][z] = row0;
+                    pixels[1][z] = row1;
+
+                    if (bone == weaponBoneID)
+                    {
+                        uint y = globalFrameIndex % (uint)weaponSize;
+                        uint x = 0 + globalFrameIndex / (uint)weaponSize * 1;
+                        z = y * (uint)weaponSize + x;
+                        weaponPixels[0][z] = row0;
+                        weaponPixels[1][z] = row1;
                     }
                 }
             }
@@ -149,6 +197,9 @@ public class AnimationBaker
         {
             animTexture[i].SetPixels(pixels[i]);
             animTexture[i].Apply();
+
+            weaponTexture[i].SetPixels(weaponPixels[i]);
+            weaponTexture[i].Apply();
         }
 
         // Save assets
@@ -157,20 +208,21 @@ public class AnimationBaker
             AssetDatabase.CreateFolder("Assets/Resources", "BakedAnimations");
         }
 
+        string assetPath;
         for (int i = 0; i < NUM_TEXTURE; i++)
         {
             if (morton)
             {
-                string assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_Morton{1}.asset", go.name, i);
-                AssetDatabase.DeleteAsset(assetPath);
-                AssetDatabase.CreateAsset(animTexture[i], assetPath);
+                assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_Morton{1}.asset", go.name, i);
             }
             else
             {
-                string assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_XY{1}.asset", go.name, i);
-                AssetDatabase.DeleteAsset(assetPath);
-                AssetDatabase.CreateAsset(animTexture[i], assetPath);
+                assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_XY{1}.asset", go.name, i);
             }
+            AssetHelper.SaveAsset(animTexture[i], assetPath, true);
+
+            assetPath = string.Format("Assets/Resources/BakedAnimations/{0}_BakedAnimation_Weapon{1}.asset", go.name, i);
+            AssetHelper.SaveAsset(weaponTexture[i], assetPath, true);
         }
 
         Debug.Log(string.Format("Animation {0} baked to Assets/Resources/BakedAnimations/", go.name));

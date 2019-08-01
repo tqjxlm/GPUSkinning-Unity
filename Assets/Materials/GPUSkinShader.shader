@@ -18,6 +18,7 @@
 		CGPROGRAM
 		#pragma surface surf Standard vertex:vert addshadow halfasview noforwardadd exclude_path:deferred exclude_path:prepass
 		#pragma multi_compile MORTON_CODE XY_INDEXING
+		#pragma multi_compile CHARACTER WEAPON
 		#pragma target 3.5
 
 		sampler2D _MainTex;
@@ -28,7 +29,12 @@
 
 		#include "GPUSkinning.cginc"
 		void vert(inout appdata v) {
-			applySkin(v);
+			#if CHARACTER
+				applySkin(v);
+			#endif
+			#if WEAPON
+				applyWeapon(v);
+			#endif
 		}
 
 		struct Input {

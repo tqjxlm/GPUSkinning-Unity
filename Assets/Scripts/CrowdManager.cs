@@ -53,7 +53,7 @@ public class CrowdManager : MonoBehaviour
     #region static attributes
 
     // Total crowd count to be spawned
-    public int crowdCount = 10;
+    public int Count = 1000;
 
     // The radius of the allowed spawning region
     public float spawnRadius = 50;
@@ -69,7 +69,7 @@ public class CrowdManager : MonoBehaviour
     #region runtime attributes
 
     // Radius of the capsule collider
-    public float MeshRadius { get; private set; }
+    public float Radius { get; private set; }
 
     // Texture frame length in fraction
     [HideInInspector] public float[] FrameLength;
@@ -92,6 +92,8 @@ public class CrowdManager : MonoBehaviour
 
     GPUSkinning gpuSkinning;
 
+    WeaponManager weaponMgr;
+
     #endregion
 
     #region runtime status
@@ -100,7 +102,7 @@ public class CrowdManager : MonoBehaviour
     public Matrix4x4[] Transforms { get; private set; }
 
     // World position of all instances
-    public Vector3[] Positions2D { get; private set; }
+    public Vector3[] Positions { get; private set; }
 
     // Animation status transfered to GPU: [frame_dst, weight_dst, frame_src, weight_src]
     public Vector4[] AnimationStatusGPU { get; private set; }
@@ -124,18 +126,20 @@ public class CrowdManager : MonoBehaviour
 
     void Awake()
     {
+        weaponMgr = GetComponent<WeaponManager>();
+        gpuSkinning = GetComponent<GPUSkinning>();
         grid = GetComponent<SceneGrid>();
         grid.center = new Vector2(spawnRadius, spawnRadius);
 
         // Runtime states
-        Transforms = new Matrix4x4[crowdCount];
-        Positions2D = new Vector3[crowdCount];
-        AnimationStatusGPU = new Vector4[crowdCount];
-        Velocities = new Vector3[crowdCount];
-        AnimationStatusCPU = new PlayStatus[crowdCount];
-        Rotations = new Quaternion[crowdCount];
-        GridID = new int[crowdCount];
-        Weapons = new int[crowdCount];
+        Transforms = new Matrix4x4[Count];
+        Positions = new Vector3[Count];
+        AnimationStatusGPU = new Vector4[Count];
+        Velocities = new Vector3[Count];
+        AnimationStatusCPU = new PlayStatus[Count];
+        Rotations = new Quaternion[Count];
+        GridID = new int[Count];
+        Weapons = new int[Count];
 
         // State machine definitions
         stateDefinition = new AnimationState[Animations.Count];
@@ -156,19 +160,18 @@ public class CrowdManager : MonoBehaviour
     {
         mortonSort = HardwareAdapter.MortonSortEnabled;
         mainCamera = Camera.main;
-        gpuSkinning = GetComponent<GPUSkinning>();
     }
 
     // Spawn a crowd
-    public void Spawn(int weaponCnt)
+    public void Spawn()
     {
         CapsuleCollider collider = GetComponent<CapsuleCollider>();
-        MeshRadius = Math.Max(collider.radius, collider.height / 2);
+        Radius = Math.Max(collider.radius, collider.height / 2);
         grid.sqrRadius = (float)Math.Pow(collider.radius * 2, 2);
 
         UnityEngine.Random.InitState(10);
 
-        for (int i = 0; i < crowdCount; i++)
+        for (int i = 0; i < Count; i++)
         {
             Vector3 pos = new Vector3(UnityEngine.Random.Range(0, spawnRadius * 2), 0, UnityEngine.Random.Range(0, spawnRadius * 2));
             Quaternion rot = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0);
@@ -177,11 +180,13 @@ public class CrowdManager : MonoBehaviour
             AnimationStatusGPU[i] = new Vector4(0, 1, 0, 0);
             AnimationStatusCPU[i] = new PlayStatus(0, randomStart);
 
-            Positions2D[i] = pos;
+            Positions[i] = pos;
             Rotations[i] = rot;
             Transforms[i] = Matrix4x4.TRS(pos, rot, Vector3.one);
             GridID[i] = -1;
-            Weapons[i] = UnityEngine.Random.Range(0, weaponCnt);
+
+            Weapons[i] = i;
+            weaponMgr.Equip(i, i);
         }
     }
 
@@ -192,7 +197,7 @@ public class CrowdManager : MonoBehaviour
         cameraPosition2D = mainCamera.transform.position;
         cameraPosition2D.y = 0;
 
-        for (int i = 0; i < crowdCount; i++)
+        for (int i = 0; i < Count; i++)
         {
             ref PlayStatus transition = ref AnimationStatusCPU[i];
             ref Vector4 state = ref AnimationStatusGPU[i];
@@ -219,7 +224,7 @@ public class CrowdManager : MonoBehaviour
         Vector3 direction = v.normalized;
 
         // Attraction
-        Vector3 toCamera = cameraPosition2D - Positions2D[i];
+        Vector3 toCamera = cameraPosition2D - Positions[i];
         float distance = toCamera.magnitude;
         float attractionRate = distance < MIN_DISTANCE ? 0 : (distance > MAX_DISTANCE ? MAX_DISTANCE : distance) / distance * ATTRACTION_RATE;
         Vector3 attraction = toCamera * attractionRate;
@@ -240,12 +245,12 @@ public class CrowdManager : MonoBehaviour
             }
             if (j != i)
             {
-                Vector3 toNeighbour = Positions2D[j] - Positions2D[i];
+                Vector3 toNeighbour = Positions[j] - Positions[i];
                 float dist = toNeighbour.magnitude;
                 float dot = Vector3.Dot(toNeighbour, direction) / dist;
                 if (dot > 0)
                 {
-                   pressureRate += dot * PRESSURE_RATE / (dist - MeshRadius * 2);
+                   pressureRate += dot * PRESSURE_RATE / (dist - Radius * 2);
                 }
             }
             if (pressureRate >= 1.0f)
@@ -262,11 +267,11 @@ public class CrowdManager : MonoBehaviour
 
     void UpdateTransform(int i, float deltaTime)
     {
-        Vector3 target = Positions2D[i] + Velocities[i] * deltaTime;
-        int newID = grid.Move(i, GridID[i], target, Positions2D);
+        Vector3 target = Positions[i] + Velocities[i] * deltaTime;
+        int newID = grid.Move(i, GridID[i], target, Positions);
         if (newID >= 0)
         {
-            Positions2D[i] = target;
+            Positions[i] = target;
             GridID[i] = newID;
         }
         else
@@ -279,7 +284,7 @@ public class CrowdManager : MonoBehaviour
             Rotations[i] = Quaternion.LookRotation(Velocities[i], up);
         }
         Transforms[i] = Matrix4x4.TRS(
-            Positions2D[i], Rotations[i], Vector3.one);
+            Positions[i], Rotations[i], Vector3.one);
     }
 
     void UpdateStatus(ref PlayStatus play, ref Vector4 state, float sqrSpeed, float deltaTime)
@@ -321,9 +326,9 @@ public class CrowdManager : MonoBehaviour
 
         if (mortonSort)
         {
-            // For Morton Sort, the index is unfolded here and decoded in the shader
-            state[2] = MathHelper.EncodeMorton(((uint)inSrc + (uint)beforeSrc) % (uint)gpuSkinning.TextureSize);
-            state[0] = MathHelper.EncodeMorton(((uint)inDst + (uint)beforeDst) % (uint)gpuSkinning.TextureSize);
+            // For Morton Sort, the index decoded in the shader
+            state[2] = MathHelper.EncodeMorton((uint)inSrc + (uint)beforeSrc);
+            state[0] = MathHelper.EncodeMorton((uint)inDst + (uint)beforeDst);
         }
         else
         {

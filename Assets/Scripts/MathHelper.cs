@@ -37,10 +37,41 @@ public class DualQuaternion
         dual = new Quaternion(v.x, v.y, v.z, 0);
     }
 
-    public static DualQuaternion Normalize(DualQuaternion q)
+    public DualQuaternion Normalized()
     {
-        float mag = Quaternion.Dot(q.real, q.real);
-        return q * (1.0f / mag);
+        float mag = Quaternion.Dot(real, real);
+        return this * (1.0f / mag);
+    }
+
+    public DualQuaternion Conjugate()
+    {
+        return new DualQuaternion(real.Conjugate(), dual.Conjugate());
+    }
+
+    public Matrix4x4 ToMatrix()
+    {
+        DualQuaternion q = Normalized();
+        Matrix4x4 M = Matrix4x4.identity;
+        float w = q.real.w;
+        float x = q.real.x;
+        float y = q.real.y;
+        float z = q.real.z;
+        // Extract rotational information
+        M.m00 = w * w + x * x - y * y - z * z;
+        M.m10 = 2 * x * y + 2 * w * z;
+        M.m20 = 2 * x * z - 2 * w * y;
+        M.m01 = 2 * x * y - 2 * w * z;
+        M.m11 = w * w + y * y - x * x - z * z;
+        M.m21 = 2 * y * z + 2 * w * x;
+        M.m02 = 2 * x * z + 2 * w * y;
+        M.m12 = 2 * y * z - 2 * w * x;
+        M.m22 = w * w + z * z - x * x - y * y;
+        // Extract translation information
+        Quaternion t = q.dual.Scale(2.0f) * q.real.Conjugate();
+        M.m03 = t.x;
+        M.m13 = t.y;
+        M.m23 = t.z;
+        return M;
     }
 
     public static DualQuaternion operator +(DualQuaternion lhs, DualQuaternion rhs)
@@ -56,11 +87,6 @@ public class DualQuaternion
     public static DualQuaternion operator *(DualQuaternion lhs, DualQuaternion rhs)
     {
         return new DualQuaternion(lhs.real * rhs.real, (lhs.real * rhs.dual).Add(lhs.dual * rhs.real));
-    }
-
-    public static DualQuaternion Conjugate(DualQuaternion q)
-    {
-        return new DualQuaternion(q.real.Conjugate(), q.dual.Conjugate());
     }
 }
 

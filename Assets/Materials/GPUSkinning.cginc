@@ -37,6 +37,7 @@ UNITY_INSTANCING_BUFFER_END(Props)
 
 #if XY_INDEXING
 	uniform float _foldingOffset;
+	uniform float _weaponRescale;
 
 	inline float4 unfoldXY(half x, half y)
 	{
@@ -152,5 +153,26 @@ void applySkinSimple(inout appdata v)
 
 		v.vertex.xyz = transformPositionDQ(v.vertex.xyz, real, dual);
 		// v.normal = transformNormalDQ(v.normal, real, dual);
+	#endif
+}
+
+void applyWeapon(inout appdata v)
+{
+	#ifdef UNITY_INSTANCING_ENABLED
+		half4 anim = UNITY_ACCESS_INSTANCED_PROP(Props, _AnimState);
+
+		float2x4 uv = float2x4(
+			unfoldXY(0.5*_foldingOffset, anim[0] * _weaponRescale),
+			unfoldXY(0.5*_foldingOffset, anim[2] * _weaponRescale));
+
+		half2 weights = half2(anim[1], anim[3]);
+
+		half4 real = sampleRowSimple(_Animation0, uv, weights);
+		half4 dual = sampleRowSimple(_Animation1, uv, weights);
+
+		normalizeDQ(real, dual);
+
+		v.vertex.xyz = transformPositionDQ(v.vertex.xyz, real, dual);
+		v.normal = transformNormalDQ(v.normal, real, dual);
 	#endif
 }

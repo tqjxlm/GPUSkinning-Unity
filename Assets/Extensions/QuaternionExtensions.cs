@@ -23,4 +23,12 @@ public static class QuaternionExtensions
     {
         return new Vector4(q.x, q.y, q.z, q.w);
     }
+
+    public static void FromColor(ref this Quaternion q, Color c)
+    {
+        q.x = c.r;
+        q.y = c.g;
+        q.z = c.b;
+        q.w = c.a;
+    }
 }

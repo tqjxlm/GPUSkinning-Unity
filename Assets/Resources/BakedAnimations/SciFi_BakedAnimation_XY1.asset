@@ -29,9 +29,9 @@ Texture2D:
     m_FilterMode: 1
     m_Aniso: 1
     m_MipBias: 0
-    m_WrapU: 0
-    m_WrapV: 0
-    m_WrapW: 0
+    m_WrapU: 2
+    m_WrapV: 2
+    m_WrapW: 2
   m_LightmapFormat: 0
   m_ColorSpace: 0
   image data: 131072

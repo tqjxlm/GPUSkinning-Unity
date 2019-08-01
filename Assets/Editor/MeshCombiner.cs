@@ -67,10 +67,9 @@ public class MeshCombiner
 
         r.sharedMesh.Optimize();
 
-        string path = GetStoragePath("MergedMeshes");
+        string path = AssetHelper.GetStoragePath("MergedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + ".asset");
-        AssetDatabase.CreateAsset(r.sharedMesh, meshPath);
-        AssetDatabase.SaveAssets();
+        AssetHelper.SaveAsset(r.sharedMesh, path);
 
         Debug.Log("bindposes size: " + bindposes.Count);
         Debug.Log("bone size: " + boneCollections[0].Count);
@@ -97,10 +96,9 @@ public class MeshCombiner
         }
         newMesh.vertices = vertices;
 
-        string path = GetStoragePath("DeformedMeshes");
+        string path = AssetHelper.GetStoragePath("DeformedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + "_Deformed.asset");
-        AssetDatabase.CreateAsset(newMesh, meshPath);
-        AssetDatabase.SaveAssets();
+        AssetHelper.SaveAsset(newMesh, meshPath);
     }
 
     [MenuItem("GameObject/Deform Mesh/Long", false, 0)]
@@ -122,19 +120,8 @@ public class MeshCombiner
         }
         newMesh.vertices = vertices;
 
-        string path = GetStoragePath("DeformedMeshes");
+        string path = AssetHelper.GetStoragePath("DeformedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + "_Deformed.asset");
-        AssetDatabase.CreateAsset(newMesh, meshPath);
-        AssetDatabase.SaveAssets();
-    }
-
-    static string GetStoragePath(string subPath)
-    {
-        string assetDir = "Assets/Meshes";
-        if (!Directory.Exists(assetDir + '/' + subPath))
-        {
-            AssetDatabase.CreateFolder(assetDir, subPath);
-        }
-        return assetDir + '/' + subPath;
+        AssetHelper.SaveAsset(newMesh, meshPath);
     }
 }

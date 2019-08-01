@@ -20,23 +20,12 @@ public class MeshSimplifier
 
         destMesh.Optimize();
 
-        string path = GetStoragePath("SimplifiedMeshes");
+        string path = AssetHelper.GetStoragePath("SimplifiedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + "_LOD.asset");
-        AssetDatabase.CreateAsset(destMesh, meshPath);
-        AssetDatabase.SaveAssets();
+        AssetHelper.SaveAsset(destMesh, meshPath);
 
         smRenderer.sharedMesh = destMesh;
 
         Debug.Log("Simplified mesh saved to " + meshPath);
-    }
-
-    static string GetStoragePath(string subPath)
-    {
-        string assetDir = "Assets/Meshes";
-        if (!Directory.Exists(assetDir + '/' + subPath))
-        {
-            AssetDatabase.CreateFolder(assetDir, subPath);
-        }
-        return assetDir + '/' + subPath;
     }
 }
