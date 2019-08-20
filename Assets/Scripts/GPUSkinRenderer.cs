@@ -59,7 +59,7 @@ public class LODSettings
 
 // This script should be attached to the top level of a skinned game object
 // Two skeletal game object with the same bone settings should be asigned to it as LODs
-public class GPUSkinning : MonoBehaviour
+public class GPUSkinRenderer : MonoBehaviour
 {
     public const uint NUM_TEXTURE = 2;      // In a dual quaternion implementation, we store 2 Vector4 in 2 textures
     public const uint MAXIMUM_BONE = 64;    // 64 bones should be enough, but up to 500 is tested to be OK
@@ -113,6 +113,7 @@ public class GPUSkinning : MonoBehaviour
 
         crowdMgr = GetComponent<CrowdManager>();
         weaponMgr = GetComponent<WeaponManager>();
+        instanceCullThreshold = crowdMgr.Radius * 2;
 
         instanceID = new int[crowdMgr.Count];
         instanceDistance = new float[crowdMgr.Count];
@@ -127,10 +128,6 @@ public class GPUSkinning : MonoBehaviour
 
         // UI Controls
         InitControls();
-
-        // Spawn crowd
-        crowdMgr.Spawn();
-        instanceCullThreshold = crowdMgr.Radius * 2;
 
         StartCoroutine("ReOrder");
         StartCoroutine("AdaptPerformance");

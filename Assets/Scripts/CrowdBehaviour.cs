@@ -51,6 +51,7 @@ public class CrowdBehaviour : MonoBehaviour
         crowdMgr.SetNumInstances(Count);
 
         weaponMgr = GetComponent<WeaponManager>();
+        weaponMgr.SetInstanceNum(Count);
 
         grid = gameObject.AddComponent<SceneGrid>();
         grid.center = new Vector2(spawnRadius, spawnRadius);

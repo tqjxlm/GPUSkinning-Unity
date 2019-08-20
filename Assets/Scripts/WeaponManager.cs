@@ -32,19 +32,6 @@ public class WeaponManager : MonoBehaviour
         {
             Radius[i] = AvailableWeapons[i].bounds.extents.magnitude;
         }
-
-        Positions = new Vector3[crowd.Count];
-        Transforms = new Matrix4x4[crowd.Count];
-        Types = new int[crowd.Count];
-        Users = new int[crowd.Count];
-
-        Count = crowd.Count;
-
-        for (int i = 0; i < crowd.Count; i++)
-        {
-            Types[i] = Random.Range(0, AvailableWeapons.Count);
-            Users[i] = -1;
-        }
     }
 
     void Update()
@@ -57,6 +44,22 @@ public class WeaponManager : MonoBehaviour
                 Positions[i] = crowd.Positions[userID];
                 Transforms[i] = crowd.Transforms[userID];
             }
+        }
+    }
+
+    public void SetInstanceNum(int crowdCount)
+    {
+        Count = crowdCount;
+
+        Positions = new Vector3[Count];
+        Transforms = new Matrix4x4[Count];
+        Types = new int[Count];
+        Users = new int[Count];
+
+        for (int i = 0; i < Count; i++)
+        {
+            Types[i] = Random.Range(0, AvailableWeapons.Count);
+            Users[i] = -1;
         }
     }
 

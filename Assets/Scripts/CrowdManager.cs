@@ -77,11 +77,11 @@ public class CrowdManager : MonoBehaviour
 
     bool mortonSort = true;
 
-    GPUSkinning gpuSkinning;
+    GPUSkinRenderer gpuSkinning;
 
     void Awake()
     {
-        gpuSkinning = GetComponent<GPUSkinning>();
+        gpuSkinning = GetComponent<GPUSkinRenderer>();
 
         CapsuleCollider collider = GetComponent<CapsuleCollider>();
         Radius = Math.Max(collider.radius, collider.height / 2);
@@ -103,19 +103,6 @@ public class CrowdManager : MonoBehaviour
         }
     }
 
-    // Spawn a crowd
-    public void Spawn()
-    {
-        UnityEngine.Random.InitState(10);
-
-        for (int i = 0; i < Count; i++)
-        {
-            float randomStart = UnityEngine.Random.Range(0, 1.0f);
-            AnimationStatusGPU[i] = new Vector4(0, 1, 0, 0);
-            AnimationStatusCPU[i] = new PlayStatus(0, randomStart);
-        }
-    }
-
     public void SetNumInstances(int CrowdCount)
     {
         Count = CrowdCount;
@@ -125,6 +112,15 @@ public class CrowdManager : MonoBehaviour
         Positions = new Vector3[Count];
         AnimationStatusGPU = new Vector4[Count];
         AnimationStatusCPU = new PlayStatus[Count];
+
+        UnityEngine.Random.InitState(10);
+
+        for (int i = 0; i < Count; i++)
+        {
+            float randomStart = UnityEngine.Random.Range(0, 1.0f);
+            AnimationStatusGPU[i] = new Vector4(0, 1, 0, 0);
+            AnimationStatusCPU[i] = new PlayStatus(0, randomStart);
+        }
     }
 
     public void SetTransform(int ID, Vector3 pos, Quaternion rot)

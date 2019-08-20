@@ -11,6 +11,7 @@
 
 sampler2D _Animation0;
 sampler2D _Animation1;
+uniform float _foldingOffset;
 
 UNITY_INSTANCING_BUFFER_START(Props)
     UNITY_DEFINE_INSTANCED_PROP(half4, _AnimState)
@@ -36,7 +37,6 @@ UNITY_INSTANCING_BUFFER_END(Props)
 #endif
 
 #if XY_INDEXING
-	uniform float _foldingOffset;
 	uniform float _weaponRescale;
 
 	inline float4 unfoldXY(half x, half y)

@@ -5,8 +5,8 @@ using System;
 
 public class AnimationBaker
 {
-    const uint NUM_TEXTURE = GPUSkinning.NUM_TEXTURE;
-    const uint ATLAS_PADDING = GPUSkinning.ATLAS_PADDING;
+    const uint NUM_TEXTURE = GPUSkinRenderer.NUM_TEXTURE;
+    const uint ATLAS_PADDING = GPUSkinRenderer.ATLAS_PADDING;
 
     static DualQuaternion[] boneTransforms;
     static Dictionary<string, int> allBones;
@@ -47,7 +47,7 @@ public class AnimationBaker
         GameObject go = Selection.activeGameObject;
         Animator animator = go.GetComponent<Animator>();
         CrowdManager crowd = go.GetComponent<CrowdManager>();
-        GPUSkinning renderer = go.GetComponent<GPUSkinning>();
+        GPUSkinRenderer renderer = go.GetComponent<GPUSkinRenderer>();
 
         if (animator == null || crowd == null)
         {
@@ -149,8 +149,7 @@ public class AnimationBaker
         Color[][] pixels = new Color[NUM_TEXTURE][];
         for (int i = 0; i < NUM_TEXTURE; i++)
         {
-            animTexture[i] = new Texture2D(
-                size, size, TextureFormat.RGBAHalf, false, false)
+            animTexture[i] = new Texture2D(size, size, TextureFormat.RGBAHalf, false, false)
             {
                 wrapMode = TextureWrapMode.Mirror
             };
@@ -159,7 +158,7 @@ public class AnimationBaker
 
         // Allocate weapon texture
         int weaponSize = 1;
-        while(weaponSize * weaponSize < totalFrame)
+        while (weaponSize * weaponSize < totalFrame)
         {
             weaponSize *= 2;
         }
