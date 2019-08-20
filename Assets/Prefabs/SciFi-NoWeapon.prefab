@@ -808,7 +808,7 @@ SkinnedMeshRenderer:
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
   m_SkinnedMotionVectors: 1
-  m_Mesh: {fileID: 4300000, guid: 67cb748d58c79804ebadf3b689fc411e, type: 2}
+  m_Mesh: {fileID: 0}
   m_Bones:
   - {fileID: 7900266255536393222}
   - {fileID: 7900266256169276243}
@@ -886,7 +886,7 @@ GameObject:
   - component: {fileID: 7900266254765226826}
   - component: {fileID: 7900266254765226829}
   - component: {fileID: 7900266254765226830}
-  - component: {fileID: 7900266255411865826}
+  - component: {fileID: 9204599062880539278}
   m_Layer: 0
   m_Name: SciFi-NoWeapon
   m_TagString: Untagged
@@ -943,8 +943,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3f92adc827bade439ce849ce5ee5949, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  crowdCount: 1000
-  spawnRadius: 70
   transitionDuration: 0.5
   Animations:
   - clip: {fileID: 7400000, guid: 551f724226ce6ad45a85b9988153b011, type: 2}
@@ -982,9 +980,7 @@ MonoBehaviour:
     size: 1000
     lodPrefab: {fileID: 7900266254753295722}
     maxSize: 0
-  AvailableWeapons:
-  - {fileID: 4300000, guid: 8ced7dd43db283b4a929c833d5973cfd, type: 2}
-  - {fileID: 4300000, guid: 3b0ae74fa69b26b419047a0d4f0e4557, type: 2}
+  weaponBone: {fileID: 0}
 --- !u!136 &7900266254765226830
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -999,7 +995,7 @@ CapsuleCollider:
   m_Height: 2.16
   m_Direction: 1
   m_Center: {x: 0, y: 1.07, z: 0}
---- !u!114 &7900266255411865826
+--- !u!114 &9204599062880539278
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1008,11 +1004,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 7900266254765226817}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a91f254d317ca704e937af11900b6fdb, type: 3}
+  m_Script: {fileID: 11500000, guid: 3b862a12c59317347817d044804d4147, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sqrRadius: 0
-  center: {x: 0, y: 0}
+  Count: 1000
+  spawnRadius: 50
 --- !u!1 &7900266254784083940
 GameObject:
   m_ObjectHideFlags: 0

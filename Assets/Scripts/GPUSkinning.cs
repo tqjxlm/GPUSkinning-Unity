@@ -122,9 +122,10 @@ public class GPUSkinning : MonoBehaviour
         // Rendering preperation
         PrepareRenderData();
 
+        // LOD containers
         InitLODs();
 
-        // Controls
+        // UI Controls
         InitControls();
 
         // Spawn crowd

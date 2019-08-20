@@ -69,6 +69,44 @@ public class AnimationBaker
         BakeAnimation(crowd, animator, go, false);
     }
 
+    static void BakeFrame(uint globalFrameIndex, bool morton, int size, int weaponSize, Color[][] pixels, Color[][] weaponPixels)
+    {
+        // Store the bone animation to an array of textures
+        for (uint bone = 0; bone < allBones.Count; bone++)
+        {
+            DualQuaternion dq = boneTransforms[bone];
+            if (dq == null) continue;
+            var row0 = dq.real.ToVector4();
+            var row1 = dq.dual.ToVector4();
+
+            uint z;
+
+            if (morton)
+            {
+                uint y = globalFrameIndex;
+                uint x = bone;
+                z = MathHelper.EncodeMorton(x, y);
+            }
+            else
+            {
+                uint y = globalFrameIndex % (uint)size;
+                uint x = bone + globalFrameIndex / (uint)size * (uint)allBones.Count;
+                z = y * (uint)size + x;
+            }
+            pixels[0][z] = row0;
+            pixels[1][z] = row1;
+
+            if (bone == weaponBoneID)
+            {
+                uint y = globalFrameIndex % (uint)weaponSize;
+                uint x = 0 + globalFrameIndex / (uint)weaponSize * 1;
+                z = y * (uint)weaponSize + x;
+                weaponPixels[0][z] = row0;
+                weaponPixels[1][z] = row1;
+            }
+        }
+    }
+
     static void BakeAnimation(CrowdManager crowd, Animator animator, GameObject go, bool morton)
     {
         // Get bone and animator info
@@ -144,7 +182,10 @@ public class AnimationBaker
         {
             AnimationResource anim = animations[animID];
             AnimationClip clip = anim.clip;
-            MathHelper.GetAnimationTime(clip, morton ? 1 : anim.sampleRate, out float animationTimeStep, out uint keyFrameCnt);
+            MathHelper.GetAnimationTime(clip,
+                morton ? 1 : anim.sampleRate,
+                out float animationTimeStep,
+                out uint keyFrameCnt);
 
             for (uint frame = 0; frame < keyFrameCnt + ATLAS_PADDING; frame++)
             {
@@ -153,41 +194,7 @@ public class AnimationBaker
                 animator.Update(animationTimeStep);
                 FetchBoneMatrices(rootBone, globalTransform);
 
-                // Store the bone animation to an array of textures
-                for (uint bone = 0; bone < allBones.Count; bone++)
-                {                   
-                    DualQuaternion dq = boneTransforms[bone];
-                    if (dq == null) continue;
-                    var row0 = dq.real.ToVector4();
-                    var row1 = dq.dual.ToVector4();
-
-                    uint globalFrameIndex = frameOffset + frame;
-                    uint z;
-
-                    if (morton)
-                    {
-                        uint y = globalFrameIndex;
-                        uint x = bone;
-                        z = MathHelper.EncodeMorton(x, y);
-                    }
-                    else
-                    {
-                        uint y = globalFrameIndex % (uint)size;
-                        uint x = bone + globalFrameIndex / (uint)size * (uint)allBones.Count;
-                        z = y * (uint)size + x;
-                    }
-                    pixels[0][z] = row0;
-                    pixels[1][z] = row1;
-
-                    if (bone == weaponBoneID)
-                    {
-                        uint y = globalFrameIndex % (uint)weaponSize;
-                        uint x = 0 + globalFrameIndex / (uint)weaponSize * 1;
-                        z = y * (uint)weaponSize + x;
-                        weaponPixels[0][z] = row0;
-                        weaponPixels[1][z] = row1;
-                    }
-                }
+                BakeFrame(frameOffset + frame, morton, size, weaponSize, pixels, weaponPixels);
             }
 
             frameOffset += keyFrameCnt + ATLAS_PADDING;

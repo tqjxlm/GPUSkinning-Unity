@@ -3578,8 +3578,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3f92adc827bade439ce849ce5ee5949, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Count: 1000
-  spawnRadius: 70
   transitionDuration: 0.5
   Animations:
   - clip: {fileID: 7400000, guid: 551f724226ce6ad45a85b9988153b011, type: 2}
@@ -3618,7 +3616,7 @@ GameObject:
   - component: {fileID: 9151582979855182705}
   - component: {fileID: 9151582979855182706}
   - component: {fileID: 9151582979855182718}
-  - component: {fileID: 9151582980485576926}
+  - component: {fileID: 9151582979855182719}
   m_Layer: 0
   m_Name: SciFi
   m_TagString: Untagged
@@ -3643,6 +3641,20 @@ MonoBehaviour:
   - {fileID: 4300000, guid: 6e293f0ffa24c5c41836b40a0bf1b5ed, type: 2}
   - {fileID: 4300000, guid: 3b0ae74fa69b26b419047a0d4f0e4557, type: 2}
   WeaponMaterial: {fileID: 2100000, guid: 1666fb81395f51e4293b01cca8f58481, type: 2}
+--- !u!114 &9151582979855182719
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9151582979855182717}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b862a12c59317347817d044804d4147, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  Count: 1000
+  spawnRadius: 50
 --- !u!1 &9151582979874039768
 GameObject:
   m_ObjectHideFlags: 0
@@ -4172,20 +4184,6 @@ Transform:
   m_Father: {fileID: 9151582979874039769}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &9151582980485576926
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9151582979855182717}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a91f254d317ca704e937af11900b6fdb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sqrRadius: 0
-  center: {x: 0, y: 0}
 --- !u!1 &9151582980513668894
 GameObject:
   m_ObjectHideFlags: 0

@@ -1129,9 +1129,9 @@ GameObject:
   - component: {fileID: 9151582980570075413}
   - component: {fileID: 9151582980570075410}
   - component: {fileID: 9151582980570075409}
-  - component: {fileID: 9151582980211131069}
+  - component: {fileID: 1940922182068997937}
   m_Layer: 0
-  m_Name: SciFi 1
+  m_Name: SciFi
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1186,8 +1186,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3f92adc827bade439ce849ce5ee5949, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  crowdCount: 1000
-  spawnRadius: 70
   transitionDuration: 0.5
   Animations:
   - clip: {fileID: 7400000, guid: 551f724226ce6ad45a85b9988153b011, type: 2}
@@ -1225,7 +1223,7 @@ MonoBehaviour:
     size: 1000
     lodPrefab: {fileID: 9151582980592486197}
     maxSize: 0
-  AvailableWeapons: []
+  weaponBone: {fileID: 0}
 --- !u!136 &9151582980570075409
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1240,7 +1238,7 @@ CapsuleCollider:
   m_Height: 2.16
   m_Direction: 1
   m_Center: {x: 0, y: 1.07, z: 0}
---- !u!114 &9151582980211131069
+--- !u!114 &1940922182068997937
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1249,11 +1247,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 9151582980570075422}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a91f254d317ca704e937af11900b6fdb, type: 3}
+  m_Script: {fileID: 11500000, guid: 3b862a12c59317347817d044804d4147, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sqrRadius: 0
-  center: {x: 0, y: 0}
+  Count: 1000
+  spawnRadius: 50
 --- !u!1 &9151582980592486197
 GameObject:
   m_ObjectHideFlags: 0
