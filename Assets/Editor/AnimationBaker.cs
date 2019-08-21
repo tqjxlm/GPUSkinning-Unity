@@ -41,7 +41,7 @@ public class AnimationBaker
     }
 
     // Bake an animation into texture
-    [MenuItem("GameObject/Bake Animation", false, 0)]
+    [MenuItem("GameObject/GPUSkinning/Bake Animation", false, 0)]
     static void BakeAnimations()
     {
         GameObject go = Selection.activeGameObject;

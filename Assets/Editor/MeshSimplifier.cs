@@ -4,7 +4,7 @@ using System.IO;
 
 public class MeshSimplifier
 {
-    [MenuItem("GameObject/Simplify Mesh", false, 0)]
+    [MenuItem("GameObject/GPUSkinning/Simplify Mesh", false, 0)]
     static void SimplifyMesh()
     {
         GameObject go = Selection.activeGameObject;

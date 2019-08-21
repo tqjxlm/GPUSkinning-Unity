@@ -5,7 +5,7 @@ using System.IO;
 
 public class MeshCombiner
 {
-    [MenuItem("GameObject/Merge Mesh", false, 0)]
+    [MenuItem("GameObject/GPUSkinning/Merge Mesh", false, 0)]
     public static void MergeSkinnedMesh()
     {
         GameObject go = Selection.activeGameObject;
@@ -75,7 +75,7 @@ public class MeshCombiner
         Debug.Log("bone size: " + boneCollections[0].Count);
     }
 
-    [MenuItem("GameObject/Deform Mesh/Fat", false, 0)]
+    [MenuItem("GameObject/GPUSkinning/Deform Mesh - Fat", false, 0)]
     public static void DeformMeshFat()
     {
         GameObject go = Selection.activeGameObject;
@@ -101,7 +101,7 @@ public class MeshCombiner
         AssetHelper.SaveAsset(newMesh, meshPath);
     }
 
-    [MenuItem("GameObject/Deform Mesh/Long", false, 0)]
+    [MenuItem("GameObject/GPUSkinning/Deform Mesh - Long", false, 0)]
     public static void DeformMeshLong()
     {
         GameObject go = Selection.activeGameObject;
