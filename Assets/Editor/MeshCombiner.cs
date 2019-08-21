@@ -6,9 +6,14 @@ using System.IO;
 public class MeshCombiner
 {
     [MenuItem("GameObject/GPUSkinning/Merge Mesh", false, 0)]
-    public static void MergeSkinnedMesh()
+    public static void MergeSkinnedMeshEditor()
     {
         GameObject go = Selection.activeGameObject;
+        MergeSkinnedMesh(go);
+    }
+
+    public static void MergeSkinnedMesh(GameObject go)
+    {
         SkinnedMeshRenderer[] smRenderers = go.GetComponentsInChildren<SkinnedMeshRenderer>();
         List<Transform>[] boneCollections = new List<Transform>[smRenderers.Length];
         List<BoneWeight> boneWeights = new List<BoneWeight>();
@@ -54,7 +59,9 @@ public class MeshCombiner
             bindposes.Add(boneCollections[0][b].worldToLocalMatrix * go.transform.worldToLocalMatrix);
         }
 
-        SkinnedMeshRenderer r = go.AddComponent<SkinnedMeshRenderer>();
+        GameObject child = new GameObject("LOD0");
+        child.transform.parent = go.transform;
+        SkinnedMeshRenderer r = child.AddComponent<SkinnedMeshRenderer>();
         r.sharedMesh = new Mesh();
         r.sharedMesh.CombineMeshes(combineInstances.ToArray(), true, true);
 
@@ -69,7 +76,7 @@ public class MeshCombiner
 
         string path = AssetHelper.GetStoragePath("MergedMeshes");
         string meshPath = AssetDatabase.GenerateUniqueAssetPath(path + "/" + go.name + ".asset");
-        AssetHelper.SaveAsset(r.sharedMesh, path);
+        AssetHelper.SaveAsset(r.sharedMesh, meshPath);
 
         Debug.Log("bindposes size: " + bindposes.Count);
         Debug.Log("bone size: " + boneCollections[0].Count);
