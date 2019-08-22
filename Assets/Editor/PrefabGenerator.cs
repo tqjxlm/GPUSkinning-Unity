@@ -10,10 +10,29 @@ public class PrefabGenerator
     {
         GameObject go = Selection.activeGameObject;
 
+        // If the object has a top level mesh, move it to children
+        var topLevelMesh = go.GetComponent<SkinnedMeshRenderer>();
+        if (topLevelMesh)
+        {
+            GameObject lod = new GameObject("LOD0");
+            lod.transform.parent = go.transform;
+            SkinnedMeshRenderer lodRenderer = lod.AddComponent<SkinnedMeshRenderer>();
+            UnityEditorInternal.ComponentUtility.CopyComponent(topLevelMesh);
+            UnityEditorInternal.ComponentUtility.PasteComponentValues(lodRenderer);
+            GameObject.Destroy(topLevelMesh);
+        }
+
         // Combine mesh if necessary
         if (go.transform.childCount > 2)
         {
             MeshCombiner.MergeSkinnedMesh(go);
+        }
+
+        // Validation
+        var mesh = go.GetComponentInChildren<SkinnedMeshRenderer>();
+        if (mesh == null)
+        {
+            Debug.LogError("No skinned mesh found in children!");
         }
 
         // Components
@@ -28,10 +47,11 @@ public class PrefabGenerator
         }
         animator.enabled = false;
 
+        // Default values
         renderer.GPUSkinShader = (Shader)AssetDatabase.LoadAssetAtPath("Assets/Materials/GPUSkinShader.shader", typeof(Shader));
         renderer.GPUSkinShaderSimple = (Shader)AssetDatabase.LoadAssetAtPath("Assets/Materials/GPUSkinShaderSimple.shader", typeof(Shader));
 
-        var mesh = go.GetComponentInChildren<SkinnedMeshRenderer>();
+        // Try to fit the collider to the mesh
         if (mesh)
         {
             var bounds = mesh.bounds;
